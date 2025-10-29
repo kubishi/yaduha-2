@@ -10,9 +10,9 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class VocabEntry:
-    """Immutable vocabulary entry linking English and Paiute"""
+    """Immutable vocabulary entry linking English and the target language"""
     english: str
-    paiute: str
+    target: str
 
 # Define all vocabulary in one place - this is the ONLY place you need to edit!
 NOUNS = [
@@ -100,19 +100,19 @@ TRANSITIVE_VERB_LOOKUP: Dict[str, VocabEntry] = {entry.english: entry for entry 
 INTRANSITIVE_VERB_LOOKUP: Dict[str, VocabEntry] = {entry.english: entry for entry in INTRANSITIVE_VERBS}
 
 
-def get_noun_paiute(lemma: str) -> str:
-    return NOUN_LOOKUP[lemma].paiute
+def get_noun_target(lemma: str) -> str:
+    return NOUN_LOOKUP[lemma].target
 
-def get_transitive_verb_paiute(lemma: str) -> str:
-    return TRANSITIVE_VERB_LOOKUP[lemma].paiute
+def get_transitive_verb_target(lemma: str) -> str:
+    return TRANSITIVE_VERB_LOOKUP[lemma].target
 
-def get_intransitive_verb_paiute(lemma: str) -> str:
-    return INTRANSITIVE_VERB_LOOKUP[lemma].paiute
+def get_intransitive_verb_target(lemma: str) -> str:
+    return INTRANSITIVE_VERB_LOOKUP[lemma].target
 
-def get_verb_paiute(lemma: str) -> str:
+def get_verb_target(lemma: str) -> str:
     if lemma in TRANSITIVE_VERB_LOOKUP:
-        return TRANSITIVE_VERB_LOOKUP[lemma].paiute
-    return INTRANSITIVE_VERB_LOOKUP[lemma].paiute
+        return TRANSITIVE_VERB_LOOKUP[lemma].target
+    return INTRANSITIVE_VERB_LOOKUP[lemma].target
 
 
 # ============================================================================
@@ -314,7 +314,7 @@ class Sentence(BaseModel):
         elif isinstance(self.object, ObjectNoun):
             object_pronoun_prefix = self.object.get_matching_pronoun_prefix()
 
-        verb_stem = get_transitive_verb_paiute(self.verb.lemma) if self.object is not None else get_intransitive_verb_paiute(self.verb.lemma)
+        verb_stem = get_transitive_verb_target(self.verb.lemma) if self.object is not None else get_intransitive_verb_target(self.verb.lemma)
         verb_str = ""
         verb_suffix = self.verb.get_verb_suffix()
         if object_pronoun_prefix is None:
@@ -328,10 +328,10 @@ class Sentence(BaseModel):
             if isinstance(self.object.head, Pronoun):
                 object_str = None
             else:
-                paiute_word = get_noun_paiute(self.object.head)
-                does_end_in_glottal = paiute_word.endswith("'")
+                target_word = get_noun_target(self.object.head)
+                does_end_in_glottal = target_word.endswith("'")
                 object_suffix = self.object.proximity.get_object_suffix(does_end_in_glottal)
-                object_str = f"{paiute_word}-{object_suffix}"
+                object_str = f"{target_word}-{object_suffix}"
 
         subject_str = None
         if isinstance(self.subject, Pronoun):
@@ -340,9 +340,9 @@ class Sentence(BaseModel):
             if isinstance(self.subject.head, Pronoun):
                 subject_str = None
             else:
-                paiute_word = get_noun_paiute(self.subject.head)
+                target_word = get_noun_target(self.subject.head)
                 subject_suffix = self.subject.proximity.get_subject_suffix()
-                subject_str = f"{paiute_word}-{subject_suffix}"
+                subject_str = f"{target_word}-{subject_suffix}"
 
         if object_str is None:
             return f"{verb_str} {subject_str}"
@@ -425,37 +425,4 @@ def to_lenis(word: str) -> str:
     else:
         return word
 
-# ============================================================================
-# MAIN
-# ============================================================================
 
-def main():
-    # Test serialization
-    print("=" * 60)
-    print("Testing serialization (should only contain English)")
-    print("=" * 60)
-    sentence = Sentence(
-        subject=SubjectNoun(
-            head="dog",
-            proximity=Proximity.proximal,
-            plurality=Plurality.singular
-        ),
-        verb=Verb(
-            lemma="eat",
-            tense=Tense.present,
-            aspect=Aspect.simple
-        ),
-        object=ObjectNoun(
-            head="rice",
-            proximity=Proximity.distal,
-            plurality=Plurality.singular
-        )
-    )
-
-    json_output = sentence.model_dump_json(indent=2)
-    print(json_output)
-
-    print(Sentence.model_json_schema())
-
-if __name__ == "__main__":
-    main()

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import List
 from langchain.agents import create_agent
+import argparse
 
 from model_ovp import Sentence
 
@@ -10,20 +11,19 @@ dotenv.load_dotenv()
 
 
 THISDIR = Path(__file__).parent.resolve()
-EXAMPLEDIR = THISDIR / "examples_ovp_to_eng.json"
+EXAMPLEDIR = THISDIR / "data" / "examples_ovp_to_eng.json"
 
 def create_examples():
     examples = []
     while True:
         sentence = Sentence.sample(1)[0]
-        print(sentence)
         translation = input("Enter English translation (or 's' to skip, 'q' to quit): ")
         if translation.lower() == 'q':
             break
         if translation.lower() == 's':
             continue
         example = {
-            "json": sentence.model_dump_json(),
+            "json": json.loads(sentence.model_dump_json()),
             "paiute": str(sentence),
             "english": translation
         }
@@ -65,19 +65,45 @@ def translate_ovp_to_english(sentence: Sentence, model: str) -> str:
     response = agent.invoke({"messages": messages})
     message = response['messages'][-1]
     return message.content
+
+
+def get_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Translate OVP sentences to English.")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="gpt-4",
+        help="The language model to use for translation."
+    )
     
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    parser_examples = subparsers.add_parser("create-examples", help="Create example translations.")
+    parser_examples.add_argument('-f', '--force', action='store_true', help="Force re-creation of examples.")
+    parser_translate = subparsers.add_parser("translate", help="Translate sample sentences.")
+    parser_translate.add_argument('-n', '--num', type=int, default=1, help="Number of sample sentences to translate.")
+
+    return parser
 
 def main():
-    # # Uncomment to create examples
-    # create_examples()
+    parser = get_parser()
+    args = parser.parse_args()
 
-    # Sample sentences and translate them
-    sentences = Sentence.sample(1)
-    for sentence in sentences:
-        print(f"Paiute: {sentence}")
-        translation = translate_ovp_to_english(sentence, model="gpt-4")
-        print(f"English: {translation}")
-        print()
+    if getattr(args, 'command', None) is None:
+        parser.print_help()
+        return
+
+    if args.command == "create-examples":
+        if args.force or not EXAMPLEDIR.exists():
+            create_examples()
+        else:
+            print(f"Examples file {EXAMPLEDIR} already exists. Use --force to recreate.")
+    elif args.command == "translate":
+        for i, sentence in enumerate(Sentence.sample(args.num)):
+            print(f"Paiute: {sentence}")
+            translation = translate_ovp_to_english(sentence, model=args.model)
+            print(f"English: {translation}")
+            if i < args.num - 1:
+                print()
 
 if __name__ == "__main__":
     main()
