@@ -402,9 +402,6 @@ class Sentence(BaseModel):
         """Generate n sample sentences (string representations)"""
         return list(cls.sample_iter(n))
 
-class SentenceList(BaseModel):
-    sentences: List[Sentence]
-
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
