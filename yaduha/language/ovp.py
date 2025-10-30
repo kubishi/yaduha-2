@@ -1,8 +1,10 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Dict, Generator, List, Optional, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 from enum import Enum
 from random import choice, randint
 from dataclasses import dataclass
+
+from yaduha import Sentence
 
 # ============================================================================
 # VOCABULARY DEFINITIONS - **ONLY** PLACE TO ADD NEW WORDS!
@@ -302,7 +304,7 @@ class ObjectNoun(Noun):
             reflexive=False
         ).get_object_pronoun()
 
-class Sentence(BaseModel):
+class SentenceOVP(Sentence):
     subject: Union[SubjectNoun, Pronoun]
     verb: Verb
     object: Optional[Union[ObjectNoun, Pronoun]] = None
@@ -350,7 +352,7 @@ class Sentence(BaseModel):
             return f"{subject_str} {object_str} {verb_str}"
 
     @classmethod
-    def sample_iter(cls, n: int) -> Generator['Sentence', None, None]:
+    def sample_iter(cls, n: int) -> Generator['SentenceOVP', None, None]:
         """Generate n sample sentences (string representations)"""
         for _ in range(n):
             # Random subject
@@ -398,9 +400,92 @@ class Sentence(BaseModel):
             yield cls(subject=subject, verb=verb, object=obj)
 
     @classmethod
-    def sample(cls, n: int) -> List['Sentence']:
+    def sample(cls, n: int) -> List['SentenceOVP']:
         """Generate n sample sentences (string representations)"""
         return list(cls.sample_iter(n))
+
+    @classmethod
+    def get_examples(cls) -> List[Tuple[str, "SentenceOVP"]]:
+        examples = [
+            (
+                "You and I will run.",
+                SentenceOVP(
+                    subject=Pronoun(
+                        person=Person.first,
+                        plurality=Plurality.dual,
+                        proximity=Proximity.proximal,
+                        inclusivity=Inclusivity.exclusive,
+                        reflexive=False
+                    ),
+                    verb=Verb(
+                        lemma="run",
+                        tense=Tense.present,
+                        aspect=Aspect.simple
+                    ),
+                    object=None
+                )
+            ),
+            (
+                "You read the mountains.",
+                SentenceOVP(
+                    subject=Pronoun(
+                        person=Person.second,
+                        plurality=Plurality.singular,
+                        proximity=Proximity.distal,
+                        inclusivity=Inclusivity.exclusive,
+                        reflexive=False
+                    ),
+                    verb=Verb(
+                        lemma="read",
+                        tense=Tense.present,
+                        aspect=Aspect.simple
+                    ),
+                    object=ObjectNoun(
+                        head="mountain",
+                        proximity=Proximity.distal,
+                        plurality=Plurality.plural
+                    )
+                ),
+            ),
+            (
+                "That worm will dance.",
+                SentenceOVP(
+                    subject=SubjectNoun(
+                        head="worm",
+                        proximity=Proximity.distal,
+                        plurality=Plurality.singular
+                    ),
+                    verb=Verb(
+                        lemma="dance",
+                        tense=Tense.future,
+                        aspect=Aspect.simple
+                    ),
+                    object=None
+                )
+            ),
+            (
+                "That food cooks this weasle.",
+                SentenceOVP(
+                    subject=SubjectNoun(
+                        head="food",
+                        proximity=Proximity.distal,
+                        plurality=Plurality.singular
+                    ),
+                    verb=Verb(
+                        lemma="cook",
+                        tense=Tense.present,
+                        aspect=Aspect.simple
+                    ),
+                    object=ObjectNoun(
+                        head="weasle",
+                        proximity=Proximity.proximal,
+                        plurality=Plurality.singular
+                    )
+                )
+            )
+        ]
+
+        return examples
 
 # ============================================================================
 # UTILITY FUNCTIONS

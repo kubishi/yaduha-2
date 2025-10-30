@@ -1,18 +1,16 @@
-import logging
 from pydantic import BaseModel, create_model
-from typing import Any, ClassVar, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Tuple
 from abc import abstractmethod
 import random
 import string
 import inspect
-import jsonschema
 
-from openai.types.responses import FunctionToolParam
-
+from openai.types.chat.chat_completion_function_tool_param import ChatCompletionFunctionToolParam
+from openai.types.shared_params import FunctionDefinition
 
 class Tool(BaseModel):
-    name: str
-    description: str
+    name: ClassVar[str]
+    description: ClassVar[str]
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -20,7 +18,6 @@ class Tool(BaseModel):
             raise ValueError(f"Tool name '{self.name}' is not a valid Python identifier.")
         if self.name in {"print", "input", "len", "str", "int", "float", "list", "dict", "set", "tuple"}:
             raise ValueError(f"Tool name '{self.name}' is a reserved Python keyword or built-in function name.")
-        self.validate_examples()
 
     @abstractmethod
     def __call__(self, *args, **kwargs) -> Any:
@@ -31,7 +28,7 @@ class Tool(BaseModel):
         """Generate a random tool call id of the form call_aSENunZCF31ob7zV89clvL4n"""
         return "call_" + ''.join(random.choices(string.ascii_letters + string.digits, k=24))
 
-    def get_tool_call_schema(self) -> FunctionToolParam:
+    def get_tool_call_schema(self) -> ChatCompletionFunctionToolParam:
         signature = inspect.signature(self.__call__)
         properties = {}
         for name, param in signature.parameters.items():
@@ -46,12 +43,14 @@ class Tool(BaseModel):
             properties[name] = (annotation, default)
 
         model = create_model(self.name, **properties)
-        schema = FunctionToolParam(
-            name=self.name,
-            parameters=model.model_json_schema(),
-            strict=False,
+        schema = ChatCompletionFunctionToolParam(
             type="function",
-            description=self.description,
+            function=FunctionDefinition(
+                name=self.name,
+                parameters=model.model_json_schema(),
+                strict=False,
+                description=self.description,
+            )
         )
         return schema
     
@@ -77,21 +76,4 @@ class Tool(BaseModel):
         """
         raise NotImplementedError
     
-    def validate_examples(self) -> None:
-        """Validate the examples for the tool."""
-        examples = self.get_examples()
-        schema = self.get_tool_call_schema()
-        output_schema = self.get_tool_call_output_schema()
-        
-        for i, (input_example, output_example) in enumerate(examples):
-            try:
-                jsonschema.validate(instance=input_example, schema=schema["parameters"] or {})
-            except jsonschema.ValidationError as e:
-                raise ValueError(f"Example {i} input does not conform to schema: {e.message}")
-            try:
-                jsonschema.validate(instance={"output": output_example}, schema=output_schema) 
-            except jsonschema.ValidationError as e:
-                raise ValueError(f"Example {i} output does not conform to schema: {e.message}")
-            
-        logging.debug(f"All {len(examples)} examples are valid for tool {self.name}.")
 

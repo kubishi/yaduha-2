@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 from pydantic import BaseModel
+from yaduha.agent import Agent
 from yaduha.tool import Tool
 
 
@@ -34,10 +35,8 @@ class Translation(BaseModel):
         return self.__str__()
 
 class Translator(Tool):
-    model: str
-    tools: List[Tool]
-    name: str = "translator"
-    description: str = "Translate text to the target language and back to the source language."
+    name: ClassVar[str] = "translator"
+    description: ClassVar[str] = "Translate text to the target language and back to the source language."
     
     def __call__(self, text: str) -> Translation:
         """Translate the text to the target language and back to the source language.
