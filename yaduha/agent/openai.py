@@ -1,10 +1,11 @@
-from typing import List, Literal, Type, ClassVar, overload
+import time
+import json
+from typing import ClassVar, List, Literal, Type, overload
 from openai import OpenAI
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
-import json
-from pydantic import Field
+from pydantic import Field, BaseModel
 
-from yaduha.agent import Agent, ModelType
+from yaduha.agent import Agent, AgentResponse, TBaseModel
 from yaduha.tool import Tool
 
 
@@ -13,79 +14,88 @@ class OpenAIAgent(Agent):
     name: ClassVar[str] = "openai_agent"
     api_key: str = Field(..., description="The OpenAI API key.", exclude=True)
 
+    # overload: text
     @overload
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: None = None,
+        response_format: Type[str] = str,
         tools: List["Tool"] | None = None,
-    ) -> str: ...
-
+    ) -> AgentResponse: ...
+    # overload: model
     @overload
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: Type[ModelType],
+        response_format: Type[TBaseModel],
         tools: List["Tool"] | None = None,
-    ) -> ModelType: ...
+    ) -> AgentResponse: ...
 
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: None | Type[ModelType] = None,
+        response_format: Type[BaseModel] | Type[str] = str,
         tools: List["Tool"] | None = None,
-    ) -> ModelType | str:
-        client = OpenAI()
+    ) -> AgentResponse:
+        start_time = time.time()
 
-        chat_tools = [
-            tool.get_tool_call_schema() for tool in (tools or [])
-        ]
+        client = OpenAI(api_key=self.api_key)
+        chat_tools = [tool.get_tool_call_schema() for tool in (tools or [])]
         tool_map = {tool.name: tool for tool in (tools or [])}
 
         while True:
-            if response_format is None:
+            # TEXT branch
+            if response_format is str:
                 response = client.chat.completions.create(
                     model=self.model,
                     messages=messages,
                     tools=chat_tools,
                 )
-                messages.append(
-                    json.loads(
-                        response.choices[0].message.model_dump_json()
-                    )
-                )
+                msg = json.loads(response.choices[0].message.model_dump_json())
+                messages.append(msg)
+
                 if not response.choices[0].message.tool_calls:
-                    if response.choices[0].message.content:
-                        return response.choices[0].message.content
-                    else:
+                    content = response.choices[0].message.content
+                    if not content:
                         raise ValueError("No content in response")
+                    return AgentResponse(
+                        content=content,
+                        response_time=time.time() - start_time,
+                        prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
+                        completion_tokens=response.usage.completion_tokens if response.usage else 0,
+                    )
+
+            # MODEL branch
             else:
                 response = client.beta.chat.completions.parse(
                     model=self.model,
                     messages=messages,
-                    response_format=response_format
+                    response_format=response_format,  # <- the Pydantic model class
                 )
-                messages.append(
-                    json.loads(
-                        response.choices[0].message.model_dump_json()
-                    )
-                )
+                msg = json.loads(response.choices[0].message.model_dump_json())
+                messages.append(msg)
+
                 if not response.choices[0].message.tool_calls:
-                    if response.choices[0].message.parsed:
-                        return response.choices[0].message.parsed
-                    else:
+                    parsed = response.choices[0].message.parsed
+                    if not parsed:
                         raise ValueError("No content in response")
-        
-            for tool_call in response.choices[0].message.tool_calls:
+                    return AgentResponse(
+                        content=parsed,
+                        response_time=time.time() - start_time,
+                        prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
+                        completion_tokens=response.usage.completion_tokens if response.usage else 0,
+                    )
+
+            # tool loop (same as yours)
+            for tool_call in response.choices[0].message.tool_calls or []:
                 if tool_call.type == "function":
                     name = tool_call.function.name
                     args = json.loads(tool_call.function.arguments)
-
                     result = tool_map[name](**args)
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": str(result)
-                    })
-
-    
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "content": str(result),
+                        }
+                    )

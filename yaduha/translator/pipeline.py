@@ -1,14 +1,11 @@
 import re
+import time
 from typing import ClassVar, Generic, Type
 
-from yaduha.translator import Translator, Translation
+from yaduha.translator import Translator, Translation, BackTranslation
 from yaduha.tool.english_to_sentences import EnglishToSentencesTool, TSentenceType
 from yaduha.tool.sentence_to_english import SentenceToEnglishTool
 from yaduha.agent import Agent
-
-# Rebuild models to resolve forward references
-EnglishToSentencesTool.model_rebuild()
-SentenceToEnglishTool.model_rebuild()
 
 class PipelineTranslator(Translator, Generic[TSentenceType]):
     __exclude_parent_fields__ = ["tools"]
@@ -27,6 +24,7 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
         Returns:
             Translation: The translation
         """
+        start_time = time.time()
         translate_input_to_sentences = EnglishToSentencesTool(
             agent=self.agent,
             SentenceType=self.SentenceType
@@ -42,22 +40,36 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             s = s[0].upper() + s[1:]
             return s
 
-        sentences = translate_input_to_sentences(text)
+        sentences_response = translate_input_to_sentences(text)
+        end_time = time.time()
+
         targets = []
         back_translations = []
-        for sentence in sentences:
+        prompt_tokens = sentences_response.prompt_tokens
+        completion_tokens = sentences_response.completion_tokens
+        prompt_tokens_bt = 0
+        completion_tokens_bt = 0
+
+        start_time_bt = time.time()
+        for sentence in sentences_response.content.sentences:
             targets.append(clean_text(str(sentence)))
-            back_translations.append(clean_text(translate_sentence_to_english(sentence)))
+            back_translation = translate_sentence_to_english(sentence)
+            back_translations.append(clean_text(back_translation.content))
+            prompt_tokens_bt += back_translation.prompt_tokens
+            completion_tokens_bt += back_translation.completion_tokens
+        end_time_bt = time.time()
 
         return Translation(
             source=text,
             target=" ".join(targets),
-            back_translation=" ".join(back_translations),
-            prompt_tokens=0,
-            completion_tokens=0,
-            translation_time=0.0,
-            back_translation_prompt_tokens=0,
-            back_translation_completion_tokens=0,
-            back_translation_time=0.0,
-            metadata={}
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            translation_time=end_time - start_time,
+            back_translation=BackTranslation(
+                source=" ".join(back_translations),
+                target=" ".join(targets),
+                prompt_tokens=prompt_tokens_bt,
+                completion_tokens=completion_tokens_bt,
+                translation_time=end_time_bt - start_time_bt
+            ),
         )

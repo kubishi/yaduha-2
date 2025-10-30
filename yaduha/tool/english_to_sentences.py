@@ -3,9 +3,10 @@ from pydantic import create_model, BaseModel
 
 from yaduha.language import Sentence
 from yaduha.tool import Tool
+from yaduha.agent import Agent, AgentResponse
 
-if TYPE_CHECKING:
-    from yaduha.agent import Agent
+# if TYPE_CHECKING:
+#     from yaduha.agent import Agent
 
 TSentenceType = TypeVar("TSentenceType", bound=Sentence)
 class SentenceList(BaseModel, Generic[TSentenceType]):
@@ -17,7 +18,7 @@ class EnglishToSentencesTool(Tool, Generic[TSentenceType]):
     description: ClassVar[str] = "Translate natural English into a structured sentence."
     SentenceType: Type[TSentenceType]
 
-    def __call__(self, english: str) -> List[TSentenceType]:
+    def __call__(self, english: str) -> AgentResponse[SentenceList[TSentenceType]]:
         TargetSentenceList = create_model(
             "TargetSentenceList",
             sentences=(List[self.SentenceType], ...),
@@ -42,4 +43,4 @@ class EnglishToSentencesTool(Tool, Generic[TSentenceType]):
             response_format=TargetSentenceList
         )
 
-        return response.sentences
+        return response

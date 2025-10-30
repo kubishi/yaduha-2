@@ -1,39 +1,28 @@
-from typing import Any, ClassVar, Dict, Optional
-from pydantic import BaseModel
+from typing import ClassVar, Optional
+from pydantic import BaseModel, Field
 from yaduha.tool import Tool
 
 
+class BackTranslation(BaseModel):
+    source: str = Field(..., description="The back translated source-language text.")
+    target: str = Field(..., description="The original target-language text.")
+    translation_time: float = Field(..., description="The time taken for back translation.")
+    prompt_tokens: int = Field(0, description="The number of prompt tokens used for back translation.")
+    completion_tokens: int = Field(0, description="The number of completion tokens used for back translation.")
+
 class Translation(BaseModel):
-    source: str
-    target: str
-    back_translation: Optional[str]
-
-    prompt_tokens: int
-    completion_tokens: int
-    translation_time: float
-    back_translation_prompt_tokens: int
-    back_translation_completion_tokens: int
-    back_translation_time: float
-    metadata: Dict[str, Any] = {}
-
-    def __str__( self ) -> str:
-        lines = [
-            f"Source: {self.source}",
-            f"Target: {self.target}",
-            f"Back Translation: {self.back_translation}",
-            f"Prompt Tokens: {self.prompt_tokens}",
-            f"Completion Tokens: {self.completion_tokens}",
-            f"Translation Time: {self.translation_time:.2f} seconds",
-            f"Back Translation Prompt Tokens: {self.back_translation_prompt_tokens}",
-            f"Back Translation Completion Tokens: {self.back_translation_completion_tokens}",
-            f"Back Translation Time: {self.back_translation_time:.2f} seconds",
-        ]
-        return "\n".join(lines)
-    
-    def __repr__(self) -> str:
-        return self.__str__()
+    source: str = Field(..., description="The source-language text.")
+    target: str = Field(..., description="The target-language text.")
+    translation_time: float = Field(..., description="The time taken for translation.")
+    prompt_tokens: int = Field(0, description="The number of prompt tokens used for the entire translation.")
+    completion_tokens: int = Field(0, description="The number of completion tokens used for the entire translation.")
+    back_translation: BackTranslation | None = Field(
+        None, description="The back translation details, if available."
+    )
+    metadata: dict = Field(default_factory=dict, description="Additional metadata about the translation.")
 
 class Translator(Tool):
+    """Base class for translators that translate text to a target language and back to the source language."""
     name: ClassVar[str] = "translator"
     description: ClassVar[str] = "Translate text to the target language and back to the source language."
     

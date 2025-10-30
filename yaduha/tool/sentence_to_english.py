@@ -5,16 +5,14 @@ from typing import TYPE_CHECKING, ClassVar
 from yaduha.language import Sentence
 
 from yaduha.tool import Tool
-
-if TYPE_CHECKING:
-    from yaduha.agent import Agent
+from yaduha.agent import Agent, AgentResponse
 
 class SentenceToEnglishTool(Tool):
     agent: "Agent"
     name: ClassVar[str] = "sentence_to_english"
     description: ClassVar[str] = "Translate a structured sentence into natural English."
 
-    def __call__(self, sentence: Sentence) -> str:
+    def __call__(self, sentence: Sentence) -> AgentResponse:
         example_messages = []
         for english, example_sentence in sentence.get_examples():
             example_messages.append({

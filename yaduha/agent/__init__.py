@@ -1,42 +1,46 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, ClassVar, Type, TypeVar, overload, Generic
+from typing import TYPE_CHECKING, Any, List, ClassVar, Type, TypeVar, overload, Generic
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from yaduha.tool import Tool
 
-ModelType = TypeVar("ModelType", bound=BaseModel)
 TModel = TypeVar("TModel", bound=str)
+TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
+    
+class AgentResponse(BaseModel):
+    content: Any = Field(..., description="The content of the agent's response.")
+    response_time: float = Field(..., description="The time taken to generate the response.")
+    prompt_tokens: int = Field(0, description="The number of prompt tokens used in the response.")
+    completion_tokens: int = Field(0, description="The number of completion tokens used in the response.")
+
 
 class Agent(BaseModel, Generic[TModel]):
     model: TModel
     name: ClassVar[str] = Field(..., description="The name of the agent.")
 
-    # --- Overload 1: response_format=None ---
     @overload
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: None = None,
+        response_format: Type[str] = str,
         tools: List["Tool"] | None = None,
-    ) -> str: ...
+    ) -> AgentResponse: ...
 
-    # --- Overload 2: response_format=Type[ModelType] ---
     @overload
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: Type[ModelType],
+        response_format: Type[TBaseModel],
         tools: List["Tool"] | None = None,
-    ) -> ModelType: ...
+    ) -> AgentResponse: ...
 
-    # --- Implementation ---
     @abstractmethod
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: None | Type[ModelType] = None,
+        response_format: Type[BaseModel] | Type[str] = str,
         tools: List["Tool"] | None = None,
-    ) -> ModelType | str:
+    ) -> AgentResponse:
         raise NotImplementedError
