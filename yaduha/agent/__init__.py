@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 TModel = TypeVar("TModel", bound=str)
 TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
     
-class AgentResponse(BaseModel):
+class AgentResponse(BaseModel, Generic[TBaseModel]):
     content: Any = Field(..., description="The content of the agent's response.")
     response_time: float = Field(..., description="The time taken to generate the response.")
     prompt_tokens: int = Field(0, description="The number of prompt tokens used in the response.")

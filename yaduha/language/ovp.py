@@ -151,15 +151,27 @@ class Inclusivity(str, Enum):
     inclusive = "inclusive"
     exclusive = "exclusive"
 
-class Tense(str, Enum):
-    past = "past"
-    present = "present"
-    future = "future"
+class TenseAspect(str, Enum):
+    past_continuous = "past-continuous"
+    past_simple = "past-simple"
+    present_perfect = "present-perfect"
+    present_continuous = "present-continuous"
+    present_simple = "present-simple"
+    future_simple = "future-simple"
 
-class Aspect(str, Enum):
-    continuous = "continuous"
-    simple = "simple"
-    perfect = "perfect"
+    def get_suffix(self) -> str:
+        if self == TenseAspect.past_continuous or self == TenseAspect.present_continuous:
+            return "ti"
+        elif self == TenseAspect.past_simple:
+            return "ku"
+        elif self == TenseAspect.present_perfect:
+            return "pü"
+        elif self == TenseAspect.present_simple:
+            return "dü"
+        elif self == TenseAspect.future_simple:
+            return "wei"
+        else:
+            raise ValueError("Invalid tense/aspect combination")
 
 # ============================================================================
 # PYDANTIC MODELS
@@ -242,8 +254,7 @@ class Verb(BaseModel):
             'description': 'A verb lemma (transitive or intransitive)'
         }
     )
-    tense: Tense
-    aspect: Aspect
+    tense_aspect: TenseAspect
     
     @field_validator('lemma')
     @classmethod
@@ -251,26 +262,6 @@ class Verb(BaseModel):
         if v not in TRANSITIVE_VERB_LOOKUP and v not in INTRANSITIVE_VERB_LOOKUP:
             raise ValueError(f"Invalid verb: {v}")
         return v
-
-    def get_verb_suffix(self) -> str:
-        if self.tense == Tense.past:
-            if self.aspect == Aspect.perfect:
-                return 'pü'
-            elif self.aspect == Aspect.continuous:
-                return 'ti'
-            elif self.aspect == Aspect.simple:
-                return 'ku'
-        elif self.tense == Tense.present:
-            if self.aspect == Aspect.perfect:
-                return 'pü'
-            elif self.aspect == Aspect.continuous:
-                return 'ti'
-            elif self.aspect == Aspect.simple:
-                return 'dü'
-        elif self.tense == Tense.future:
-            return 'wei'
-
-        raise ValueError("Invalid tense/aspect combination")
 
 class Noun(BaseModel):
     head: str = Field(
@@ -318,7 +309,7 @@ class SentenceOVP(Sentence):
 
         verb_stem = get_transitive_verb_target(self.verb.lemma) if self.object is not None else get_intransitive_verb_target(self.verb.lemma)
         verb_str = ""
-        verb_suffix = self.verb.get_verb_suffix()
+        verb_suffix = self.verb.tense_aspect.get_suffix()
         if object_pronoun_prefix is None:
             verb_str = f"{verb_stem}-{verb_suffix}"
         else:
@@ -375,8 +366,7 @@ class SentenceOVP(Sentence):
             verb_lemma = choice(list(TRANSITIVE_VERB_LOOKUP.keys()) + list(INTRANSITIVE_VERB_LOOKUP.keys()))
             verb = Verb(
                 lemma=verb_lemma,
-                tense=choice(list(Tense)),
-                aspect=choice(list(Aspect))
+                tense_aspect=choice(list(TenseAspect))
             )
 
             # Random object for transitive verbs
@@ -419,8 +409,7 @@ class SentenceOVP(Sentence):
                     ),
                     verb=Verb(
                         lemma="run",
-                        tense=Tense.present,
-                        aspect=Aspect.simple
+                        tense_aspect=TenseAspect.future_simple,
                     ),
                     object=None
                 )
@@ -437,8 +426,7 @@ class SentenceOVP(Sentence):
                     ),
                     verb=Verb(
                         lemma="read",
-                        tense=Tense.present,
-                        aspect=Aspect.simple
+                        tense_aspect=TenseAspect.present_simple,
                     ),
                     object=ObjectNoun(
                         head="mountain",
@@ -457,14 +445,13 @@ class SentenceOVP(Sentence):
                     ),
                     verb=Verb(
                         lemma="dance",
-                        tense=Tense.future,
-                        aspect=Aspect.simple
+                        tense_aspect=TenseAspect.future_simple,
                     ),
                     object=None
                 )
             ),
             (
-                "That food cooks this weasle.",
+                "That food has cooked this weasle.",
                 SentenceOVP(
                     subject=SubjectNoun(
                         head="food",
@@ -473,8 +460,7 @@ class SentenceOVP(Sentence):
                     ),
                     verb=Verb(
                         lemma="cook",
-                        tense=Tense.present,
-                        aspect=Aspect.simple
+                        tense_aspect=TenseAspect.present_perfect,
                     ),
                     object=ObjectNoun(
                         head="weasle",
