@@ -1,6 +1,5 @@
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, Optional
 from pydantic import BaseModel
-from yaduha.agent import Agent
 from yaduha.tool import Tool
 
 

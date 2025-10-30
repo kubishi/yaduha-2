@@ -1,8 +1,8 @@
 
 
 import json
-from typing import TYPE_CHECKING, ClassVar, List
-from yaduha import Sentence
+from typing import TYPE_CHECKING, ClassVar
+from yaduha.language import Sentence
 
 from yaduha.tool import Tool
 
@@ -43,6 +43,3 @@ class SentenceToEnglishTool(Tool):
             ]
         )
         return response
-
-    def get_examples(self) -> List:
-        return []

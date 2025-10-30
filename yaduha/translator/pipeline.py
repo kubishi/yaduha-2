@@ -1,10 +1,6 @@
 import re
-from typing import ClassVar, Generic, List, Type
+from typing import ClassVar, Generic, Type
 
-from pydantic import Field
-
-from yaduha import Sentence
-from yaduha.tool import Tool
 from yaduha.translator import Translator, Translation
 from yaduha.tool.english_to_sentences import EnglishToSentencesTool, TSentenceType
 from yaduha.tool.sentence_to_english import SentenceToEnglishTool
@@ -65,6 +61,3 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             back_translation_time=0.0,
             metadata={}
         )
-    
-    def get_examples(self) -> List:
-        return []

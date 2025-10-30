@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, ClassVar, Literal, Type, TypeVar, overload, Generic
+from typing import TYPE_CHECKING, List, ClassVar, Type, TypeVar, overload, Generic
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from pydantic import BaseModel, Field
 

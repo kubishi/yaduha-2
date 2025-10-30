@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, ClassVar, Generic, List, Type, TypeVar
 from pydantic import create_model, BaseModel
 
-from yaduha import Sentence
+from yaduha.language import Sentence
 from yaduha.tool import Tool
 
 if TYPE_CHECKING:
@@ -43,6 +43,3 @@ class EnglishToSentencesTool(Tool, Generic[TSentenceType]):
         )
 
         return response.sentences
-
-    def get_examples(self) -> List:
-        return []

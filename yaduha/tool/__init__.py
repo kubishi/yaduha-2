@@ -1,5 +1,5 @@
 from pydantic import BaseModel, create_model
-from typing import Any, ClassVar, Dict, List, Tuple
+from typing import Any, ClassVar, Dict
 from abc import abstractmethod
 import random
 import string
@@ -62,18 +62,5 @@ class Tool(BaseModel):
         model = create_model(f"{self.name}_output", output=(return_type, ...))
         schema = model.model_json_schema()
         return schema
-    
-    @abstractmethod
-    def get_examples(self, *args, **kwargs) -> List[Tuple[Dict, Any]]:
-        """Get examples for the tool. 
-
-        Args:
-            *args: Extra arguments to customize the examples.
-            **kwargs: Extra keyword arguments to customize the examples.
-
-        Returns:
-            List[Tuple[Dict, Dict]]: A list of tuples of (input, output)
-        """
-        raise NotImplementedError
     
 

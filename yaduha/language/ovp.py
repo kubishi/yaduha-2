@@ -1,10 +1,10 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Tuple, Union
 from enum import Enum
 from random import choice, randint
 from dataclasses import dataclass
 
-from yaduha import Sentence
+from yaduha.language import Sentence
 
 # ============================================================================
 # VOCABULARY DEFINITIONS - **ONLY** PLACE TO ADD NEW WORDS!
