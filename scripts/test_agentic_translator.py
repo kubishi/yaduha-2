@@ -3,6 +3,7 @@ from yaduha.translator.pipeline import PipelineTranslator
 from yaduha.translator.agentic import AgenticTranslator
 from yaduha.agent.openai import OpenAIAgent
 from yaduha.language.ovp import SubjectVerbSentence, SubjectVerbObjectSentence
+from yaduha.language.ovp.prompts import get_prompt
 from yaduha.tool import Tool
 
 from typing import ClassVar, List, Dict, Tuple
@@ -28,10 +29,11 @@ def format_word(response_words: List) -> List:
 
 class SearchEnglishTool(Tool):
     name: ClassVar[str] = "search_english"
-    description: ClassVar[str] = "Search for English to Paiute translations."
+    description: ClassVar[str] = "Search in English for Paiute words/translations."
     KUBISHI_API_URL: ClassVar[str] = "https://dictionary.kubishi.com/api"
 
     def _run(self, query: str, limit: int = 3) -> List[Dict]:
+        print(f"Searching for English word: {query}")
         response = requests.get(f"{SearchEnglishTool.KUBISHI_API_URL}/search/english", params={"query": query, "limit": limit})
         response.raise_for_status()
         res_json: List[Dict] = response.json()
@@ -45,52 +47,26 @@ class SearchEnglishTool(Tool):
         ]
 
         return results
-    
-    # def get_examples(self, examples: List[List[str]] = [["where", "is", "my", "dog"], ["Rock", "going to", "hit", "cat",]], limit: int = 3) -> List[Tuple[Dict, List[Dict]]]:
-    #     """
-    #     Get examples for the tool. 
-
-    #     Args:
-    #         words (List[List[str]]): Words to search for for each given prompt Default: [["where", "is", "my", "dog"], ["Rock", "going to", "hit", "cat",]].
-    #         limit (int, optional): Limit the number of results. Defaults to 5.
-
-    #     Returns:
-    #         List[List[Tuple[Dict, List[Dict]]]]: A list of a list of tuples of (input, output), input has an index value indicating which index is part of the certain specific example
-    #     """
-
-    #     flat: List[Tuple[Dict, List[Dict]]] = []
-
-    #     for group in examples:
-    #         for word in group:
-    #             input = {"query": word, "limit": limit}
-    #             output = self(query=word, limit=limit)
-    #             flat.append((input, output))
-
-    #     return flat 
-    
+        
 class SearchPaiuteTool(Tool):
     name: ClassVar[str] = "search_paiute"
-    description: ClassVar[str] = "Search for Paiute to English translations."
+    description: ClassVar[str] = "Search in Paiute for words/translations."
     KUBISHI_API_URL: ClassVar[str] = "https://dictionary.kubishi.com/api"
 
     def _run(self, query: str, limit: int = 3) -> List[Dict]:
+        print(f"Searching for Paiute word: {query}")
         response = requests.get(f"{SearchPaiuteTool.KUBISHI_API_URL}/search/paiute", params={"query": query, "limit": limit})
         response.raise_for_status()
         res_json: List[Dict] = response.json()
         return format_word(res_json)
-    
-    # def get_examples(self, words: List[str] = ["nüümü", "pöyö"], limit: int = 5) -> List[Tuple[Dict, List[Dict]]]:
-    #     examples = [
-    #         ({"query": word, "limit": limit}, self(query=word, limit=limit)) for word in words
-    #     ]
-    #     return examples
 
 class SearchSentencesTool(Tool):
     name: ClassVar[str] = "search_sentences"
-    description: ClassVar[str] = "Search for sentences in English (semantic search)."
+    description: ClassVar[str] = "Search in English (semantic search) for example sentences/translations."
     KUBISHI_API_URL: ClassVar[str] = "https://dictionary.kubishi.com/api"
     
     def _run(self, query: str, limit: int = 3) -> List[Dict]:
+        print(f"Searching for English sentence: {query}")
         response = requests.get(f"{SearchPaiuteTool.KUBISHI_API_URL}/search/sentence", params={"query": query, "limit": limit})
         response.raise_for_status()
         res_json = response.json()
@@ -101,27 +77,31 @@ class SearchSentencesTool(Tool):
                 "translation": sentence["translation"]
             })
         return infos
-    
-    # def get_examples(self, sentences: List[str] = ["Where is my dog", "That rock is going to hit that cat"], limit: int = 5):
-    #     examples = [
-    #         ({"query": sentence, "limit": limit}, self(query=sentence, limit=limit)) for sentence in sentences
-    #     ]
-    #     return examples
 
 def main():
+    agent = OpenAIAgent(
+        model="gpt-4o-mini",
+        api_key=os.environ["OPENAI_API_KEY"]
+    )
     translator = AgenticTranslator(
-        agent=OpenAIAgent(
-            model="gpt-4o-mini",
-            api_key=os.environ["OPENAI_API_KEY"]
+        agent=agent,
+        system_prompt=get_prompt(
+            include_vocab=True,
+            has_tools=True,
+            include_examples=[SubjectVerbObjectSentence, SubjectVerbSentence]
         ),
         tools=[
             SearchEnglishTool(),
             SearchPaiuteTool(),
-            SearchSentencesTool()
+            SearchSentencesTool(),
+            PipelineTranslator(
+                agent=agent,
+                SentenceType=(SubjectVerbObjectSentence, SubjectVerbSentence)
+            )
         ]
     )
 
-    print(translator("The dog is sitting at the lakeside, drinking some water."))
+    print(translator("I am going to the store."))
 
 
 if __name__ == "__main__":

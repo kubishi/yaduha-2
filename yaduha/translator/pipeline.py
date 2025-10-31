@@ -11,7 +11,11 @@ from yaduha.language import Sentence
 
 class PipelineTranslator(Translator, Generic[TSentenceType]):
     name: ClassVar[str] = "pipeline_translator"
-    description: ClassVar[str] = "Translate text using a pipeline of translators."
+    description: ClassVar[str] = (
+        "Translate text use a model of the target language. "
+        "This approach guarantees grammatical output in the target language but may lose some meaning "
+        "from the input text due to limitations in the sentence structures available in the target language."
+    )
 
     agent: Agent
     SentenceType: Type[TSentenceType] | Tuple[Type[Sentence], ...]

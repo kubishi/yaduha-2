@@ -1,22 +1,42 @@
-from typing import ClassVar, Generic, Type, List
+from typing import ClassVar, List
+from enum import Enum
 from pydantic import Field, BaseModel
 import time
 
-from yaduha.agent import Agent, AgentResponse, TAgentResponseContentType
+from yaduha.agent import Agent
 from yaduha.translator import Translation, Translator
 from yaduha.tool import Tool
 
-from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 
+class ConfidenceLevel(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+class EvidenceItem(BaseModel):
+    tool_name: str = Field(..., description="The name of the tool used.")
+    tool_input: str = Field(..., description="The input provided to the tool.")
+    tool_output: str = Field(..., description="The output returned by the tool.")
 
 class TranslationResponse(BaseModel):
     translation: str = Field(..., description="The translated text.")
+    confidence: ConfidenceLevel = Field(..., description="The confidence level of the translation.")
+    evidence: List[EvidenceItem] = Field(..., description="The evidence used in the translation.")
 
-class AgenticTranslator(Translator, Generic[TAgentResponseContentType]):
+class AgenticTranslator(Translator):
     name: ClassVar[str] = "agentic_translator"
     description: ClassVar[str] = "Translate text using an agentic approach."
 
     agent: Agent
+    system_prompt: str = Field(
+        default=(
+            "You are a translation agent that uses tools to translate text accurately. "
+            "Use the tools available to you as needed to produce the best translation possible. "
+            "You can use one or many tool calls (in parallel and/or sequentially) until you decide to respond. "
+            "Only respond with the final translation, your confidence level, and the evidence used in your translation."
+        ),
+        description="The system prompt to guide the agent's behavior."
+    )
     tools: List[Tool] | None = Field(
         None,
         description="A list of tools that the agent can use for translation.",
@@ -29,7 +49,7 @@ class AgenticTranslator(Translator, Generic[TAgentResponseContentType]):
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a translation agent. Use the provided tools to translate the given text accurately.",
+                    "content": self.system_prompt,
                 },
                 {
                     "role": "user",
@@ -48,7 +68,10 @@ class AgenticTranslator(Translator, Generic[TAgentResponseContentType]):
             prompt_tokens=response.prompt_tokens,
             completion_tokens=response.completion_tokens,
             back_translation=None,
-            metadata={}
+            metadata={
+                "confidence_level": response.content.confidence,
+                "evidence": [item.model_dump() for item in response.content.evidence],
+            }
         )
 
         return translation

@@ -13,6 +13,7 @@ class OpenAIAgent(Agent):
     model: Literal["gpt-4o", "gpt-4o-mini", "gpt-5"]
     name: ClassVar[str] = "openai_agent"
     api_key: str = Field(..., description="The OpenAI API key.", exclude=True)
+    temperature: float = Field(default=0.0, description="The temperature for the model's responses.")
 
     # overload: text
     @overload
@@ -49,6 +50,7 @@ class OpenAIAgent(Agent):
                     model=self.model,
                     messages=messages,
                     tools=chat_tools,
+                    temperature=self.temperature
                 )
                 msg = json.loads(response.choices[0].message.model_dump_json())
                 messages.append(msg)
@@ -73,6 +75,7 @@ class OpenAIAgent(Agent):
                     messages=messages,
                     tools=chat_tools,
                     response_format=response_format,
+                    temperature=self.temperature
                 )
                 msg = json.loads(response.choices[0].message.model_dump_json())
                 messages.append(msg)
