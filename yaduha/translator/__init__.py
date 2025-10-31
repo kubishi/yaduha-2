@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional
+from typing import ClassVar
 from pydantic import BaseModel, Field
 from yaduha.tool import Tool
 
@@ -25,10 +25,10 @@ class Translator(Tool):
     """Base class for translators that translate text to a target language and back to the source language."""
     name: ClassVar[str] = "translator"
     description: ClassVar[str] = "Translate text to the target language and back to the source language."
-    
+
     def __call__(self, text: str) -> Translation:
         """Translate the text to the target language and back to the source language.
-        
+
         Args:
             text (str): The text to translate.
         Returns:

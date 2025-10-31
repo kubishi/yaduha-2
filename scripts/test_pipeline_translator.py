@@ -1,4 +1,3 @@
-from yaduha.language import Sentence
 from yaduha.translator.pipeline import PipelineTranslator
 from yaduha.agent.openai import OpenAIAgent
 from yaduha.language.ovp import SubjectVerbSentence, SubjectVerbObjectSentence
