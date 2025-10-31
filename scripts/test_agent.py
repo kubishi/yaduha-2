@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import Any, ClassVar, Dict, List, Tuple
 from pydantic import BaseModel, Field
 from yaduha.tool import Tool
 from yaduha.translator.pipeline import PipelineTranslator
@@ -20,6 +20,10 @@ PEOPLE = [
     Person(name="Charlie Brown", age=35),
 ]
 
+class Random:
+    def __init__(self) -> None:
+        pass
+
 class GetPeople(Tool):
     name: ClassVar[str] = "get_people"
     description: ClassVar[str] = "Get a list of people in our game."
@@ -39,6 +43,11 @@ class SearchPeople(Tool):
             if person.name.lower() in person.name.lower()
         ]
         return results
+
+    def get_examples(self) -> List[Tuple[Dict[str, Person], List[Person]]]:
+        return [
+            ({"person": Person(name="Alice Smith", age=79)}, [Person(name="Alice Smith", age=79)])
+        ]
     
     # def _run(self, person_name: str) -> list["Person"]:
     #     print(f"SearchPeople called with person_name={person_name}")

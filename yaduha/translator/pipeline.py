@@ -1,6 +1,6 @@
 import re
 import time
-from typing import ClassVar, Generic, Type, Tuple
+from typing import ClassVar, Dict, Generic, List, Type, Tuple
 
 from yaduha.translator import Translator, Translation, BackTranslation
 from yaduha.tool.english_to_sentences import EnglishToSentencesTool, TSentenceType
@@ -28,7 +28,10 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             agent=self.agent,
             SentenceType=self.SentenceType
         )
-        translate_sentence_to_english = SentenceToEnglishTool(agent=self.agent)
+        translate_sentence_to_english = SentenceToEnglishTool(
+            agent=self.agent,
+            SentenceType=self.SentenceType
+        )
 
         def clean_text(s: str) -> str:
             s = s.strip()
@@ -72,3 +75,40 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
                 translation_time=end_time_bt - start_time_bt
             ),
         )
+
+    def get_examples(self) -> List[Tuple[Dict[str, str], Translation]]:
+        examples = []
+        translate_input_to_sentences = EnglishToSentencesTool(
+            agent=self.agent,
+            SentenceType=self.SentenceType
+        )
+        translate_sentence_to_english = SentenceToEnglishTool(
+            agent=self.agent,
+            SentenceType=self.SentenceType
+        )
+
+        for input_example, sentence_list in translate_input_to_sentences.get_examples():
+            targets = []
+            back_translations = []
+            for sentence in sentence_list.content.sentences:
+                targets.append(str(sentence))
+                _, english_response = translate_sentence_to_english.get_examples()[0]
+                back_translations.append(english_response.content)
+
+            text_input = input_example["english"]
+            translation = Translation(
+                source=text_input,
+                target=" ".join(targets),
+                prompt_tokens=0,
+                completion_tokens=0,
+                translation_time=0.0,
+                back_translation=BackTranslation(
+                    source=" ".join(back_translations),
+                    target=" ".join(targets),
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    translation_time=0.0
+                ),
+            )
+            examples.append(({"text": text_input}, translation))
+        return examples

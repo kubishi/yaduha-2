@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 from pydantic.dataclasses import dataclass
-from typing import List, Tuple, TypeVar, Type
+from typing import Generic, List, Tuple, TypeVar, Type
 from abc import abstractmethod
 
 # Define a TypeVar bounded by Sentence
 SentenceType = TypeVar("SentenceType", bound="Sentence")
 
-class Sentence(BaseModel):
+class Sentence(BaseModel, Generic[SentenceType]):
     @abstractmethod
     def __str__(self) -> str:
         pass
