@@ -1,18 +1,19 @@
 import re
 import time
-from typing import ClassVar, Generic, Type
+from typing import ClassVar, Generic, Type, Tuple
 
 from yaduha.translator import Translator, Translation, BackTranslation
 from yaduha.tool.english_to_sentences import EnglishToSentencesTool, TSentenceType
 from yaduha.tool.sentence_to_english import SentenceToEnglishTool
 from yaduha.agent import Agent
+from yaduha.language import Sentence
 
-class PipelineTranslator(Translator, Generic[TSentenceType]):    
+class PipelineTranslator(Translator, Generic[TSentenceType]):
     name: ClassVar[str] = "pipeline_translator"
     description: ClassVar[str] = "Translate text using a pipeline of translators."
-    
+
     agent: Agent
-    SentenceType: Type[TSentenceType]
+    SentenceType: Type[TSentenceType] | Tuple[Type[Sentence], ...]
 
     def __call__(self, text: str) -> Translation:
         """Translate the text using a pipeline of translators.
