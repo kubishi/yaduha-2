@@ -67,7 +67,8 @@ class OpenAIAgent(Agent):
                 response = client.beta.chat.completions.parse(
                     model=self.model,
                     messages=messages,
-                    response_format=response_format,  # <- the Pydantic model class
+                    tools=chat_tools,
+                    response_format=response_format,
                 )
                 msg = json.loads(response.choices[0].message.model_dump_json())
                 messages.append(msg)

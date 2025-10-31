@@ -4,97 +4,8 @@ from enum import Enum
 from random import choice, randint
 from dataclasses import dataclass
 
-from yaduha.language import Sentence, SentenceType
-
-# ============================================================================
-# VOCABULARY DEFINITIONS - **ONLY** PLACE TO ADD NEW WORDS!
-# ============================================================================
-
-@dataclass(frozen=True)
-class VocabEntry:
-    """Immutable vocabulary entry linking English and the target language"""
-    english: str
-    target: str
-
-# Define all vocabulary in one place - this is the ONLY place you need to edit!
-NOUNS = [
-    VocabEntry("coyote", "isha'"),
-    VocabEntry("dog", "ishapugu"),
-    VocabEntry("cat", "kidi'"),
-    VocabEntry("horse", "pugu"),
-    VocabEntry("rice", "wai"),
-    VocabEntry("pinenuts", "tüba"),
-    VocabEntry("corn", "maishibü"),
-    VocabEntry("water", "paya"),
-    VocabEntry("river", "payahuupü"),
-    VocabEntry("chair", "katünu"),
-    VocabEntry("mountain", "toyabi"),
-    VocabEntry("food", "tuunapi"),
-    VocabEntry("tree", "pasohobü"),
-    VocabEntry("house", "nobi"),
-    VocabEntry("wickiup", "toni"),
-    VocabEntry("cup", "apo"),
-    VocabEntry("wood", "küna"),
-    VocabEntry("rock", "tübbi"),
-    VocabEntry("cottontail", "tabuutsi'"),
-    VocabEntry("jackrabbit", "kamü"),
-    VocabEntry("apple", "aaponu'"),
-    VocabEntry("weasle", "tüsüga"),
-    VocabEntry("lizard", "mukita"),
-    VocabEntry("mosquito", "wo'ada"),
-    VocabEntry("bird_snake", "wükada"),
-    VocabEntry("worm", "wo'abi"),
-    VocabEntry("squirrel", "aingwü"),
-    VocabEntry("bird", "tsiipa"),
-    VocabEntry("earth", "tüwoobü"),
-    VocabEntry("coffee", "koopi'"),
-    VocabEntry("bear", "pahabichi"),
-    VocabEntry("fish", "pagwi"),
-    VocabEntry("tail", "kwadzi"),
-]
-
-TRANSITIVE_VERBS = [
-    VocabEntry("eat", "tüka"),
-    VocabEntry("see", "puni"),
-    VocabEntry("drink", "hibi"),
-    VocabEntry("hear", "naka"),
-    VocabEntry("smell", "kwana"),
-    VocabEntry("hit", "kwati"),
-    VocabEntry("talk_to", "yadohi"),
-    VocabEntry("chase", "naki"),
-    VocabEntry("climb", "tsibui"),
-    VocabEntry("cook", "sawa"),
-    VocabEntry("read", "nia"),
-    VocabEntry("write", "mui"),
-    VocabEntry("visit", "nobini"),
-    VocabEntry("find", "tama'i"),
-]
-
-INTRANSITIVE_VERBS = [
-    VocabEntry("sit", "katü"),
-    VocabEntry("sleep", "üwi"),
-    VocabEntry("sneeze", "kwisha'i"),
-    VocabEntry("run", "poyoha"),
-    VocabEntry("go", "mia"),
-    VocabEntry("walk", "hukaw̃ia"),
-    VocabEntry("stand", "wünü"),
-    VocabEntry("lie_down", "habi"),
-    VocabEntry("talk", "yadoha"),
-    VocabEntry("fall", "kwatsa'i"),
-    VocabEntry("work", "waakü"),
-    VocabEntry("smile", "wükihaa"),
-    VocabEntry("sing", "hubiadu"),
-    VocabEntry("laugh", "nishua'i"),
-    VocabEntry("climb", "tsibui"),
-    VocabEntry("play", "tübinohi"),
-    VocabEntry("fly", "yotsi"),
-    VocabEntry("dance", "nüga"),
-    VocabEntry("swim", "pahabi"),
-    VocabEntry("read", "tünia"),
-    VocabEntry("write", "tümui"),
-    VocabEntry("chirp", "tsiipe'i"),
-]
-
+from yaduha.language import Sentence, VocabEntry
+from yaduha.language.ovp.vocab import NOUNS, TRANSITIVE_VERBS, INTRANSITIVE_VERBS
 
 # Lookup dictionaries for easy access
 NOUN_LOOKUP: Dict[str, VocabEntry] = {entry.english: entry for entry in NOUNS}
@@ -115,6 +26,22 @@ def get_verb_target(lemma: str) -> str:
     if lemma in TRANSITIVE_VERB_LOOKUP:
         return TRANSITIVE_VERB_LOOKUP[lemma].target
     return INTRANSITIVE_VERB_LOOKUP[lemma].target
+
+LENIS_MAP = {
+    'p': 'b',
+    't': 'd',
+    'k': 'g',
+    's': 'z',
+    'm': 'w̃'
+}
+
+def to_lenis(word: str) -> str:
+    """Convert a word to its lenis form"""
+    first_letter = word[0]
+    if first_letter in LENIS_MAP:
+        return LENIS_MAP[first_letter] + word[1:]
+    else:
+        return word
 
 
 # ============================================================================
@@ -578,25 +505,4 @@ class SubjectVerbObjectSentence(Sentence):
         ]
 
         return examples
-
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-LENIS_MAP = {
-    'p': 'b',
-    't': 'd',
-    'k': 'g',
-    's': 'z',
-    'm': 'w̃'
-}
-
-def to_lenis(word: str) -> str:
-    """Convert a word to its lenis form"""
-    first_letter = word[0]
-    if first_letter in LENIS_MAP:
-        return LENIS_MAP[first_letter] + word[1:]
-    else:
-        return word
-
 

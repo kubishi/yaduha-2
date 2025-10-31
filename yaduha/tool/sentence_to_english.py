@@ -1,7 +1,7 @@
 
 
 import json
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 from yaduha.language import Sentence
 
 from yaduha.tool import Tool
@@ -12,7 +12,7 @@ class SentenceToEnglishTool(Tool):
     name: ClassVar[str] = "sentence_to_english"
     description: ClassVar[str] = "Translate a structured sentence into natural English."
 
-    def __call__(self, sentence: Sentence) -> AgentResponse:
+    def _run(self, sentence: Sentence) -> AgentResponse:
         example_messages = []
         for english, example_sentence in sentence.get_examples():
             example_messages.append({

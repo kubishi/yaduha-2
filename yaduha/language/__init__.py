@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from pydantic.dataclasses import dataclass
 from typing import List, Tuple, TypeVar, Type
 from abc import abstractmethod
 
@@ -19,3 +20,9 @@ class Sentence(BaseModel):
             List[Tuple[str, SentenceType]]: A list of tuples containing English translations and their corresponding structured sentences.
         """
         pass
+
+@dataclass(frozen=True)
+class VocabEntry:
+    """Immutable vocabulary entry linking English and the target language"""
+    english: str
+    target: str

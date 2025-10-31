@@ -15,7 +15,7 @@ class EnglishToSentencesTool(Tool, Generic[TSentenceType]):
     description: ClassVar[str] = "Translate natural English into a structured sentence."
     SentenceType: Type[TSentenceType] | Tuple[Type[Sentence], ...]
 
-    def __call__(self, english: str) -> AgentResponse[SentenceList[TSentenceType]]:
+    def _run(self, english: str) -> AgentResponse[SentenceList[TSentenceType]]:
         # Handle both single type and union of types
         if isinstance(self.SentenceType, tuple):
             # Create a discriminated union type for multiple sentence types

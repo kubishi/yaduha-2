@@ -15,7 +15,7 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
     agent: Agent
     SentenceType: Type[TSentenceType] | Tuple[Type[Sentence], ...]
 
-    def __call__(self, text: str) -> Translation:
+    def _run(self, text: str) -> Translation:
         """Translate the text using a pipeline of translators.
         
         Args:
