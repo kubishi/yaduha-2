@@ -26,7 +26,7 @@ class Agent(BaseModel, Generic[TModel]):
         messages: List[ChatCompletionMessageParam],
         response_format: Type[str] = str,
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse: ...
+    ) -> AgentResponse[str]: ...
 
     @overload
     def get_response(
@@ -34,7 +34,7 @@ class Agent(BaseModel, Generic[TModel]):
         messages: List[ChatCompletionMessageParam],
         response_format: Type[TAgentResponseContentType],
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse: ...
+    ) -> AgentResponse[TAgentResponseContentType]: ...
 
     @abstractmethod
     def get_response(
@@ -42,5 +42,5 @@ class Agent(BaseModel, Generic[TModel]):
         messages: List[ChatCompletionMessageParam],
         response_format: Type[TAgentResponseContentType] = str,
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse:
+    ) -> AgentResponse[TAgentResponseContentType]:
         raise NotImplementedError

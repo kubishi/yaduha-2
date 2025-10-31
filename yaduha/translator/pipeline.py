@@ -1,3 +1,4 @@
+import random
 import re
 import time
 from typing import ClassVar, Dict, Generic, List, Type, Tuple
@@ -99,15 +100,15 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             translation = Translation(
                 source=text_input,
                 target=" ".join(targets),
-                prompt_tokens=0,
-                completion_tokens=0,
-                translation_time=0.0,
+                prompt_tokens=random.randint(10, 300),
+                completion_tokens=random.randint(10, 100),
+                translation_time=random.uniform(0.5, 2.0),
                 back_translation=BackTranslation(
                     source=" ".join(back_translations),
                     target=" ".join(targets),
-                    prompt_tokens=0,
-                    completion_tokens=0,
-                    translation_time=0.0
+                    prompt_tokens=random.randint(10, 300),
+                    completion_tokens=random.randint(10, 100),
+                    translation_time=random.uniform(0.5, 2.0)
                 ),
             )
             examples.append(({"text": text_input}, translation))

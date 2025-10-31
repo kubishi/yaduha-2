@@ -1,6 +1,6 @@
 import time
 import json
-from typing import ClassVar, List, Literal, Type, overload
+from typing import ClassVar, List, Literal, Type, overload, cast
 from openai import OpenAI
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from pydantic import Field, BaseModel
@@ -21,7 +21,7 @@ class OpenAIAgent(Agent):
         messages: List[ChatCompletionMessageParam],
         response_format: Type[str] = str,
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse: ...
+    ) -> AgentResponse[str]: ...
     # overload: model
     @overload
     def get_response(
@@ -29,14 +29,14 @@ class OpenAIAgent(Agent):
         messages: List[ChatCompletionMessageParam],
         response_format: Type[TAgentResponseContentType],
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse: ...
+    ) -> AgentResponse[TAgentResponseContentType]: ...
 
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: Type[BaseModel] | Type[str] = str,
+        response_format: Type[TAgentResponseContentType] = str,
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse:
+    ) -> AgentResponse[TAgentResponseContentType]:
         start_time = time.time()
 
         client = OpenAI(api_key=self.api_key)
@@ -57,11 +57,15 @@ class OpenAIAgent(Agent):
                     content = response.choices[0].message.content
                     if not content:
                         raise ValueError("No content in response")
-                    return AgentResponse(
-                        content=content,
-                        response_time=time.time() - start_time,
-                        prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
-                        completion_tokens=response.usage.completion_tokens if response.usage else 0,
+                    # Cast needed because type checker can't narrow TAgentResponseContentType to str
+                    return cast(
+                        AgentResponse[TAgentResponseContentType],
+                        AgentResponse(
+                            content=content,
+                            response_time=time.time() - start_time,
+                            prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
+                            completion_tokens=response.usage.completion_tokens if response.usage else 0,
+                        )
                     )
             else:
                 response = client.beta.chat.completions.parse(
@@ -77,11 +81,15 @@ class OpenAIAgent(Agent):
                     parsed = response.choices[0].message.parsed
                     if not parsed:
                         raise ValueError("No content in response")
-                    return AgentResponse(
-                        content=parsed,
-                        response_time=time.time() - start_time,
-                        prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
-                        completion_tokens=response.usage.completion_tokens if response.usage else 0,
+                    # Cast needed because type checker can't verify parsed matches TAgentResponseContentType
+                    return cast(
+                        AgentResponse[TAgentResponseContentType],
+                        AgentResponse(
+                            content=parsed,
+                            response_time=time.time() - start_time,
+                            prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
+                            completion_tokens=response.usage.completion_tokens if response.usage else 0,
+                        )
                     )
 
             for tool_call in response.choices[0].message.tool_calls or []:

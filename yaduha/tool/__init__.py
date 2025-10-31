@@ -1,7 +1,6 @@
 from functools import lru_cache
-import json
 from pydantic import BaseModel, Field, create_model
-from typing import Any, ClassVar, Dict, List, Tuple, Type, TypeVar, get_origin, get_args, Union, overload
+from typing import Any, ClassVar, Dict, List, Tuple, TypeVar, get_origin, get_args, Union
 from abc import abstractmethod
 import random
 import string
@@ -36,14 +35,17 @@ class Tool(BaseModel):
 
     def __call__(self, *args, **kwargs) -> Any:
         """Call the tool with the given arguments.
-        
+
         Automatically parses BaseModel arguments.
         """
         signature = inspect.signature(self._run)
         bound_args = signature.bind(*args, **kwargs)
         for name, value in bound_args.arguments.items():
             param = signature.parameters[name]
-            if issubclass(param.annotation, BaseModel) and not isinstance(value, param.annotation):
+            # Check if annotation is a class and a BaseModel before attempting parsing
+            if (inspect.isclass(param.annotation) and
+                issubclass(param.annotation, BaseModel) and
+                not isinstance(value, param.annotation)):
                 bound_args.arguments[name] = param.annotation(**value)
         return self._run(*bound_args.args, **bound_args.kwargs)
 
@@ -108,10 +110,18 @@ class Tool(BaseModel):
                     return all(_check_type(arg) for arg in args) if args else True
 
                 # Handle List and Dict generics
-                if origin in {list, List} and len(args) == 1:
-                    return _check_type(args[0])
-                if origin in {dict, Dict} and len(args) == 2:
-                    return _check_type(args[0]) and _check_type(args[1])
+                if origin in {list, List}:
+                    if len(args) == 1:
+                        return _check_type(args[0])
+                    elif len(args) == 0:
+                        # List without type parameter (e.g., List or list) - accept it
+                        return True
+                if origin in {dict, Dict}:
+                    if len(args) == 2:
+                        return _check_type(args[0]) and _check_type(args[1])
+                    elif len(args) == 0:
+                        # Dict without type parameters (e.g., Dict or dict) - accept it
+                        return True
 
                 # Handle Union types (including Optional which is Union[X, None])
                 if origin is Union:
@@ -274,6 +284,9 @@ class Tool(BaseModel):
         model = create_model(self.name, **properties)
         parameters_schema = model.model_json_schema()
         _add_additional_properties_false(parameters_schema)
+
+        if "properties" in parameters_schema:
+            parameters_schema["required"] = list(parameters_schema.get("properties", {}).keys())
 
         schema = {
             "type": "function",

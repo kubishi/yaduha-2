@@ -1,7 +1,7 @@
 
 
 import json
-from typing import ClassVar, Generic, List, Tuple, Type, TypeVar, Dict
+from typing import ClassVar, Generic, List, Tuple, Type, Dict
 from yaduha.language import Sentence
 
 from yaduha.tool import Tool
@@ -59,7 +59,7 @@ class SentenceToEnglishTool(Tool, Generic[TSentenceType]):
                         AgentResponse(
                             content=english,
                             response_time=random.uniform(0.1, 0.5),
-                            prompt_tokens=random.randint(10, 50),
+                            prompt_tokens=random.randint(10, 300),
                             completion_tokens=random.randint(10, 50)
                         )
                     )

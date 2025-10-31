@@ -1,5 +1,5 @@
 import random
-from typing import TYPE_CHECKING, ClassVar, Dict, Generic, List, Type, TypeVar, Union, Tuple
+from typing import ClassVar, Dict, Generic, List, Type, TypeVar, Union, Tuple, cast
 from pydantic import create_model, BaseModel
 
 from yaduha.language import Sentence
@@ -56,27 +56,9 @@ class EnglishToSentencesTool(Tool, Generic[TSentenceType]):
             response_format=TargetSentenceList
         )
 
-        return response
+        return cast(AgentResponse[SentenceList[TSentenceType]], response)
 
     def get_examples(self) -> List[Tuple[Dict[str, str], AgentResponse[SentenceList[TSentenceType]]]]:
-        # results = []
-        # for sentence_type in (
-        #     self.SentenceType
-        #     if isinstance(self.SentenceType, tuple)
-        #     else (self.SentenceType,)
-        # ):
-        #     for english, example_sentence in sentence_type.get_examples():
-        #         results.append(
-        #             (
-        #                 {"english": english},
-        #                 AgentResponse[SentenceList[TSentenceType]](
-        #                     content=SentenceList[TSentenceType](sentences=[example_sentence]),
-        #                     response_time=random.uniform(0.1, 0.5),
-        #                     prompt_tokens=random.randint(10, 50),
-        #                     completion_tokens=random.randint(10, 50)
-        #                 )
-        #             )
-        #         )
         examples = []
         if isinstance(self.SentenceType, tuple):
             sentence_types = self.SentenceType
@@ -90,7 +72,7 @@ class EnglishToSentencesTool(Tool, Generic[TSentenceType]):
                         AgentResponse[SentenceList[TSentenceType]](
                             content=SentenceList[TSentenceType](sentences=[example_sentence]),
                             response_time=random.uniform(0.1, 0.5),
-                            prompt_tokens=random.randint(10, 50),
+                            prompt_tokens=random.randint(10, 400),
                             completion_tokens=random.randint(10, 50)
                         )
                     )
