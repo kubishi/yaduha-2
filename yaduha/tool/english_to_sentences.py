@@ -5,9 +5,6 @@ from yaduha.language import Sentence
 from yaduha.tool import Tool
 from yaduha.agent import Agent, AgentResponse
 
-# if TYPE_CHECKING:
-#     from yaduha.agent import Agent
-
 TSentenceType = TypeVar("TSentenceType", bound=Sentence)
 class SentenceList(BaseModel, Generic[TSentenceType]):
     sentences: List[TSentenceType]

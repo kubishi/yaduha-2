@@ -7,9 +7,7 @@ from yaduha.tool.english_to_sentences import EnglishToSentencesTool, TSentenceTy
 from yaduha.tool.sentence_to_english import SentenceToEnglishTool
 from yaduha.agent import Agent
 
-class PipelineTranslator(Translator, Generic[TSentenceType]):
-    __exclude_parent_fields__ = ["tools"]
-    
+class PipelineTranslator(Translator, Generic[TSentenceType]):    
     name: ClassVar[str] = "pipeline_translator"
     description: ClassVar[str] = "Translate text using a pipeline of translators."
     

@@ -7,10 +7,10 @@ if TYPE_CHECKING:
     from yaduha.tool import Tool
 
 TModel = TypeVar("TModel", bound=str)
-TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
+TAgentResponseContentType = TypeVar("TAgentResponseContentType", bound=(BaseModel | str))
     
-class AgentResponse(BaseModel):
-    content: Any = Field(..., description="The content of the agent's response.")
+class AgentResponse(BaseModel, Generic[TAgentResponseContentType]):
+    content: TAgentResponseContentType = Field(..., description="The content of the agent's response.")
     response_time: float = Field(..., description="The time taken to generate the response.")
     prompt_tokens: int = Field(0, description="The number of prompt tokens used in the response.")
     completion_tokens: int = Field(0, description="The number of completion tokens used in the response.")
@@ -32,7 +32,7 @@ class Agent(BaseModel, Generic[TModel]):
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: Type[TBaseModel],
+        response_format: Type[TAgentResponseContentType],
         tools: List["Tool"] | None = None,
     ) -> AgentResponse: ...
 
@@ -40,7 +40,7 @@ class Agent(BaseModel, Generic[TModel]):
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: Type[BaseModel] | Type[str] = str,
+        response_format: Type[TAgentResponseContentType] = str,
         tools: List["Tool"] | None = None,
     ) -> AgentResponse:
         raise NotImplementedError

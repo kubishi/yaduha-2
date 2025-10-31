@@ -5,7 +5,7 @@ from openai import OpenAI
 from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
 from pydantic import Field, BaseModel
 
-from yaduha.agent import Agent, AgentResponse, TBaseModel
+from yaduha.agent import Agent, AgentResponse, TAgentResponseContentType
 from yaduha.tool import Tool
 
 
@@ -27,7 +27,7 @@ class OpenAIAgent(Agent):
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: Type[TBaseModel],
+        response_format: Type[TAgentResponseContentType],
         tools: List["Tool"] | None = None,
     ) -> AgentResponse: ...
 
@@ -44,7 +44,6 @@ class OpenAIAgent(Agent):
         tool_map = {tool.name: tool for tool in (tools or [])}
 
         while True:
-            # TEXT branch
             if response_format is str:
                 response = client.chat.completions.create(
                     model=self.model,
@@ -64,8 +63,6 @@ class OpenAIAgent(Agent):
                         prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
                         completion_tokens=response.usage.completion_tokens if response.usage else 0,
                     )
-
-            # MODEL branch
             else:
                 response = client.beta.chat.completions.parse(
                     model=self.model,
@@ -86,7 +83,6 @@ class OpenAIAgent(Agent):
                         completion_tokens=response.usage.completion_tokens if response.usage else 0,
                     )
 
-            # tool loop (same as yours)
             for tool_call in response.choices[0].message.tool_calls or []:
                 if tool_call.type == "function":
                     name = tool_call.function.name
