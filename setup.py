@@ -7,7 +7,6 @@ setup(
     install_requires=[
         'openai',
         'pydantic',
-        'jsonschema',
         'python-dotenv',
     ]
 )
