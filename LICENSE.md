@@ -5,8 +5,6 @@
 **University of Southern California** – Autonomous Networks Research Group  
 **Authors:** Jared Coleman, Diego Cuadros, Nicholas Leeds, Bhaskar Krishnamachari, Kira Toal, Ruben Rosales, Khalil Iskarous  
 
----
-
 ## 1. Permission and Use
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to use, copy, modify, merge, publish, and distribute the Software **for academic, research, and educational purposes**, subject to the following conditions:
@@ -18,13 +16,10 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 4. **Noncommercial Use** — The Software may not be used for commercial purposes without explicit written permission from Loyola Marymount University.  
 5. **Derivative Works** — Modified versions or derivative works must clearly indicate that they have been changed and may not imply endorsement by the original authors or institutions.
 
----
-
 ## 2. Disclaimer
 
 THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
----
 
 For questions or permissions, contact:  
 **Dr. Jared Coleman**  
