@@ -29,4 +29,4 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 For questions or permissions, contact:  
 **Dr. Jared Coleman**  
 *Kubishi Research Group, Loyola Marymount University*  
-📧 [jared.coleman@lmu.edu](mailto:jared.coleman@lmu.edu)
+[jared.coleman@lmu.edu](mailto:jared.coleman@lmu.edu)
