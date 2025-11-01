@@ -171,6 +171,70 @@ translator = AgenticTranslator(
 )
 ```
 
+
+## Correctness-First Translation with Structured Outputs
+
+Yaduha implements **LLM-Assisted Rule-Based Machine Translation (LLM-RBMT)**, a novel paradigm designed specifically for **no-resource and extremely low-resource languages** where traditional neural MT approaches fail due to lack of parallel corpora. Rather than relying on unconstrained text generation, Yaduha leverages **Pydantic models as linguistic constraints** to guarantee grammatical correctness while harnessing the semantic understanding of large language models.
+
+### The Core Innovation: Pydantic Models as Linguistic Grammars
+
+In Yaduha, every grammatical structure (such as `SubjectVerbSentence` or `SubjectVerbObjectSentence`) is defined as a **Pydantic model** that explicitly encodes the syntactic and morphological rules of the target language. These models act as **type-safe grammars** where each field corresponds to a validated linguistic feature:
+
+- **Part-of-speech categories** (Subject, Verb, Object)
+- **Morphological features** (`Person`, `Plurality`, `Proximity`, `Inclusivity`)
+- **Tense-aspect systems** (`TenseAspect`: past/present/future, simple/continuous/perfect)
+- **Language-specific constraints** (e.g., fortis/lenis consonant mutation in OVP)
+
+This structured representation enables what we call **rule-based sentence synthesis**: the LLM never needs to "know" the target language directly. Instead, it acts as a **syntactic and structural intermediary**, decomposing natural English into structured forms that our grammatical rules can then synthesize into the target language.
+
+### How It Works: Structured Outputs via Constrained Decoding
+
+Yaduha leverages OpenAI's [**Structured Outputs**](https://openai.com/index/introducing-structured-outputs-in-the-api/) feature (also called *constrained decoding*) to force the LLM to output responses conforming exactly to our Pydantic schemas. Here's the process:
+
+1. **Schema Generation**: Pydantic models are automatically converted to JSON Schema definitions
+2. **Constrained Generation**: The LLM generates outputs that are guaranteed to conform to the schema
+3. **Automatic Validation**: Responses are validated at runtime, ensuring grammatical correctness
+4. **Sentence Synthesis**: Valid structured data is rendered into the target language using linguistic rules
+
+For example:
+
+```python
+from yaduha.translator.pipeline import PipelineTranslator
+from yaduha.agent.openai import OpenAIAgent
+from yaduha.language.ovp import SubjectVerbSentence, SubjectVerbObjectSentence
+
+translator = PipelineTranslator(
+    agent=OpenAIAgent(model="gpt-4o-mini"),
+    SentenceType=(SubjectVerbObjectSentence, SubjectVerbSentence)
+)
+
+# Input: Complex English sentence
+result = translator("The dog is sitting at the lakeside, drinking some water.")
+
+# Output: Grammatically valid OVP sentence(s)
+print(f"OVP: {result.target}")
+print(f"Back-translation: {result.back_translation.source}")
+```
+
+Behind the scenes, the LLM performs **sentence segmentation**: breaking down the input into simple SV/SVO structures that match our defined sentence types. Each segment is then validated against the Pydantic schema, ensuring every generated sentence is well-formed according to OVP's grammatical rules.
+
+### Why This Matters for Endangered Languages
+
+This **correctness-first approach** is particularly crucial for endangered and no-resource languages because:
+
+* **No parallel data required**: The system works with only a lexicon and grammatical rules --- no bilingual corpus needed
+* **Guaranteed grammatical validity**: Every output is structurally correct by construction
+* **Suitable for language learning**: Learners can trust the grammatical correctness of generated sentences
+* **Extensible**: Adding new vocabulary or grammatical patterns is straightforward
+* **Transparent**: The structured intermediate representation is human-readable and debuggable
+
+### Learn More
+
+For more information including the evaluation methodology and empirical results demonstrating this approach, please read our paper:
+
+**📄 [LLM-Assisted Rule Based Machine Translation for Low/No-Resource Languages](https://arxiv.org/pdf/2405.08997)**
+
+
 ## Currently Supported Languages
 
 ### Owens Valley Paiute (OVP)
@@ -285,6 +349,8 @@ yaduha-2/
 
 ## Development
 
+Please find the Development Documentation at [docs/index.md](docs/index.md).
+
 ### Running Tests
 
 ```bash
@@ -297,35 +363,6 @@ python scripts/test_agentic_translator.py
 # Test agent functionality
 python scripts/test_agent.py
 ```
-
-### Type Checking
-
-Yaduha is fully typed and works with static type checkers:
-
-```bash
-mypy yaduha/
-pylance  # In VS Code
-```
-
-## Contributing
-
-Contributions are welcome! Areas of interest:
-
-- **New Languages**: Implement support for additional languages
-- **New Agents**: Add support for Anthropic, Cohere, etc.
-- **Improved Tools**: Better dictionary lookups, grammar checkers, etc.
-- **Documentation**: Improve guides and examples
-- **Testing**: Add unit and integration tests
-
-## License
-
-[Your License Here]
-
-## Acknowledgments
-
-- Owens Valley Paiute grammar implementation based on linguistic research
-- Built with OpenAI's GPT models
-- Type safety powered by Pydantic
 
 ## Citation
 
