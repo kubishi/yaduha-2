@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Generator, List, Optional, Tuple, Type, Union
 from enum import Enum
 from random import choice, randint
-from dataclasses import dataclass
 
 from yaduha.language import Sentence, VocabEntry
 from yaduha.language.ovp.vocab import NOUNS, TRANSITIVE_VERBS, INTRANSITIVE_VERBS
@@ -240,7 +239,7 @@ class ObjectNoun(Noun):
             reflexive=False
         ).get_object_pronoun()
 
-class SubjectVerbSentence(Sentence):
+class SubjectVerbSentence(Sentence["SubjectVerbSentence"]):
     subject: Union[SubjectNoun, Pronoun]
     verb: TransitiveVerb | IntransitiveVerb
 
@@ -347,7 +346,7 @@ class SubjectVerbSentence(Sentence):
 
         return examples
 
-class SubjectVerbObjectSentence(Sentence):
+class SubjectVerbObjectSentence(Sentence["SubjectVerbObjectSentence"]):
     subject: Union[SubjectNoun, Pronoun]
     verb: TransitiveVerb
     object: Union[ObjectNoun, Pronoun]

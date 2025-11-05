@@ -1,22 +1,22 @@
 
 
 import json
-from typing import ClassVar, Generic, List, Tuple, Type, Dict
+from typing import ClassVar, Generic, List, Tuple, Type, Dict, cast
 from yaduha.language import Sentence
 
 from yaduha.tool import Tool
 from yaduha.agent import Agent, AgentResponse
 from yaduha.tool.english_to_sentences import TSentenceType
 
-class SentenceToEnglishTool(Tool, Generic[TSentenceType]):
-    agent: "Agent"
+class SentenceToEnglishTool(Tool[AgentResponse[str]], Generic[TSentenceType]):
+    agent: Agent
     name: ClassVar[str] = "sentence_to_english"
     description: ClassVar[str] = "Translate a structured sentence into natural English."
     SentenceType: Type[TSentenceType] | Tuple[Type[Sentence], ...]
 
     def _run(self, sentence: TSentenceType) -> AgentResponse:
         example_messages = []
-        for english, example_sentence in sentence.get_examples():
+        for english, example_sentence in cast(List[Tuple[str, TSentenceType]], sentence.get_examples()):
             example_messages.append({
                 "role": "user",
                 "content": json.dumps(example_sentence.model_dump_json(), ensure_ascii=False)

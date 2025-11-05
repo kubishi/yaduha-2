@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pydantic import BaseModel, Field, create_model
-from typing import Any, ClassVar, Dict, List, Tuple, TypeVar, get_origin, get_args, Union
+from typing import Any, ClassVar, Dict, Generic, List, Tuple, TypeVar, get_origin, get_args, Union
 from abc import abstractmethod
 import random
 import string
@@ -19,7 +19,8 @@ def _add_additional_properties_false(schema: Dict | List) -> None:
         for item in schema:
             _add_additional_properties_false(item)
 
-class Tool(BaseModel):
+_T = TypeVar("_T")
+class Tool(BaseModel, Generic[_T]):
     name: ClassVar[str] = Field(..., description="The name of the tool.")
     description: ClassVar[str] = Field(..., description="A description of what the tool does.")
 
@@ -33,7 +34,7 @@ class Tool(BaseModel):
         self._validate_run()
         self._validate_examples()
 
-    def __call__(self, *args, **kwargs) -> Any:
+    def __call__(self, *args, **kwargs) -> _T:
         """Call the tool with the given arguments.
 
         Automatically parses BaseModel arguments.
@@ -50,10 +51,10 @@ class Tool(BaseModel):
         return self._run(*bound_args.args, **bound_args.kwargs)
 
     @abstractmethod
-    def _run(self, *args, **kwargs) -> Any:
+    def _run(self, *args, **kwargs) -> _T:
         pass
 
-    def get_examples(self) -> List[Tuple[Any, Any]]:
+    def get_examples(self) -> List[Tuple[Any, _T]]:
         """Return a list of example inputs and outputs for this tool.
 
         Subclasses can override with more specific types (covariant return types).

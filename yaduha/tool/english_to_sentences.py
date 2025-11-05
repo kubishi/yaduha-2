@@ -1,5 +1,5 @@
 import random
-from typing import ClassVar, Dict, Generic, List, Type, TypeVar, Union, Tuple, cast
+from typing import Any, ClassVar, Dict, Generic, List, Type, TypeVar, Union, Tuple, cast
 from pydantic import create_model, BaseModel
 
 from yaduha.language import Sentence
@@ -10,7 +10,7 @@ TSentenceType = TypeVar("TSentenceType", bound=Sentence)
 class SentenceList(BaseModel, Generic[TSentenceType]):
     sentences: List[TSentenceType]
 
-class EnglishToSentencesTool(Tool, Generic[TSentenceType]):
+class EnglishToSentencesTool(Tool[AgentResponse[SentenceList[TSentenceType]]]):
     agent: "Agent"
     name: ClassVar[str] = "english_to_sentences"
     description: ClassVar[str] = "Translate natural English into a structured sentence."

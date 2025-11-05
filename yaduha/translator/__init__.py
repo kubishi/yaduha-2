@@ -21,7 +21,7 @@ class Translation(BaseModel):
     )
     metadata: dict = Field(default_factory=dict, description="Additional metadata about the translation.")
 
-class Translator(Tool):
+class Translator(Tool[Translation]):
     """Base class for translators that translate text to a target language and back to the source language."""
     name: ClassVar[str] = "translator"
     description: ClassVar[str] = "Translate text to the target language and back to the source language."

@@ -16,8 +16,8 @@ def main():
         SentenceType=(SubjectVerbObjectSentence, SubjectVerbSentence)
     )
 
-    print(translator.get_examples())
-    print(translator("The dog is sitting at the lakeside, drinking some water."))
+    translation = translator("The dog is sitting at the lakeside, drinking some water.")
+    print(translation.model_dump_json())
 
 if __name__ == "__main__":
     main()

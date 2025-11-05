@@ -1,23 +1,23 @@
 from pydantic import BaseModel
 from pydantic.dataclasses import dataclass
 from typing import Generic, List, Tuple, TypeVar, Type
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
-# Define a TypeVar bounded by Sentence
-SentenceType = TypeVar("SentenceType", bound="Sentence")
+S = TypeVar("S", bound="Sentence")
 
-class Sentence(BaseModel, Generic[SentenceType]):
+class Sentence(BaseModel, ABC, Generic[S]):
     @abstractmethod
     def __str__(self) -> str:
         pass
 
     @classmethod
     @abstractmethod
-    def get_examples(cls: Type["SentenceType"]) -> List[Tuple[str, "SentenceType"]]:
+    def get_examples(cls: Type[S]) -> List[Tuple[str, S]]:
         """Return example structured sentences and their English translations.
         
         Returns:
-            List[Tuple[str, SentenceType]]: A list of tuples containing English translations and their corresponding structured sentences.
+            List[Tuple[str, SentenceType]]: A list of tuples containing English translations
+            and their corresponding structured sentences.
         """
         pass
 
