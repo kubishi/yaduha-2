@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 if TYPE_CHECKING:
     from yaduha.tool import Tool
 
-TModel = TypeVar("TModel", bound=str)
+TStringType = TypeVar("TStringType", bound=str)
 TAgentResponseContentType = TypeVar("TAgentResponseContentType", bound=(BaseModel | str))
     
 class AgentResponse(BaseModel, Generic[TAgentResponseContentType]):
@@ -16,8 +16,8 @@ class AgentResponse(BaseModel, Generic[TAgentResponseContentType]):
     completion_tokens: int = Field(0, description="The number of completion tokens used in the response.")
 
 
-class Agent(BaseModel, Generic[TModel]):
-    model: TModel
+class Agent(BaseModel, Generic[TStringType]):
+    model: TStringType
     name: ClassVar[str] = Field(..., description="The name of the agent.")
 
     @overload
