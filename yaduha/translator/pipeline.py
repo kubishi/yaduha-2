@@ -1,22 +1,26 @@
+import random
 import re
 import time
-from typing import ClassVar, Generic, Type
+from typing import ClassVar, Dict, Generic, List, Type, Tuple
 
 from yaduha.translator import Translator, Translation, BackTranslation
 from yaduha.tool.english_to_sentences import EnglishToSentencesTool, TSentenceType
 from yaduha.tool.sentence_to_english import SentenceToEnglishTool
 from yaduha.agent import Agent
+from yaduha.language import Sentence
 
 class PipelineTranslator(Translator, Generic[TSentenceType]):
-    __exclude_parent_fields__ = ["tools"]
-    
     name: ClassVar[str] = "pipeline_translator"
-    description: ClassVar[str] = "Translate text using a pipeline of translators."
-    
-    agent: Agent
-    SentenceType: Type[TSentenceType]
+    description: ClassVar[str] = (
+        "Translate text use a model of the target language. "
+        "This approach guarantees grammatical output in the target language but may lose some meaning "
+        "from the input text due to limitations in the sentence structures available in the target language."
+    )
 
-    def __call__(self, text: str) -> Translation:
+    agent: Agent
+    SentenceType: Type[TSentenceType] | Tuple[Type[Sentence], ...]
+
+    def _run(self, text: str) -> Translation:
         """Translate the text using a pipeline of translators.
         
         Args:
@@ -29,7 +33,10 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             agent=self.agent,
             SentenceType=self.SentenceType
         )
-        translate_sentence_to_english = SentenceToEnglishTool(agent=self.agent)
+        translate_sentence_to_english = SentenceToEnglishTool(
+            agent=self.agent,
+            SentenceType=self.SentenceType
+        )
 
         def clean_text(s: str) -> str:
             s = s.strip()
@@ -73,3 +80,40 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
                 translation_time=end_time_bt - start_time_bt
             ),
         )
+
+    def get_examples(self) -> List[Tuple[Dict[str, str], Translation]]:
+        examples = []
+        translate_input_to_sentences = EnglishToSentencesTool(
+            agent=self.agent,
+            SentenceType=self.SentenceType
+        )
+        translate_sentence_to_english = SentenceToEnglishTool(
+            agent=self.agent,
+            SentenceType=self.SentenceType
+        )
+
+        for input_example, sentence_list in translate_input_to_sentences.get_examples():
+            targets = []
+            back_translations = []
+            for sentence in sentence_list.content.sentences:
+                targets.append(str(sentence))
+                _, english_response = translate_sentence_to_english.get_examples()[0]
+                back_translations.append(english_response.content)
+
+            text_input = input_example["english"]
+            translation = Translation(
+                source=text_input,
+                target=" ".join(targets),
+                prompt_tokens=random.randint(10, 300),
+                completion_tokens=random.randint(10, 100),
+                translation_time=random.uniform(0.5, 2.0),
+                back_translation=BackTranslation(
+                    source=" ".join(back_translations),
+                    target=" ".join(targets),
+                    prompt_tokens=random.randint(10, 300),
+                    completion_tokens=random.randint(10, 100),
+                    translation_time=random.uniform(0.5, 2.0)
+                ),
+            )
+            examples.append(({"text": text_input}, translation))
+        return examples

@@ -6,18 +6,23 @@ from pydantic import BaseModel, Field
 if TYPE_CHECKING:
     from yaduha.tool import Tool
 
-TModel = TypeVar("TModel", bound=str)
-TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
+TStringType = TypeVar("TStringType", bound=str)
+TAgentResponseContentType = TypeVar("TAgentResponseContentType", bound=(BaseModel | str))
     
+<<<<<<< HEAD
 class AgentResponse(BaseModel, Generic[TBaseModel]):
     content: Any = Field(..., description="The content of the agent's response.")
+=======
+class AgentResponse(BaseModel, Generic[TAgentResponseContentType]):
+    content: TAgentResponseContentType = Field(..., description="The content of the agent's response.")
+>>>>>>> 8628a6da2ee4134b270241e4085b6c7a87cdba75
     response_time: float = Field(..., description="The time taken to generate the response.")
     prompt_tokens: int = Field(0, description="The number of prompt tokens used in the response.")
     completion_tokens: int = Field(0, description="The number of completion tokens used in the response.")
 
 
-class Agent(BaseModel, Generic[TModel]):
-    model: TModel
+class Agent(BaseModel, Generic[TStringType]):
+    model: TStringType
     name: ClassVar[str] = Field(..., description="The name of the agent.")
 
     @overload
@@ -26,21 +31,21 @@ class Agent(BaseModel, Generic[TModel]):
         messages: List[ChatCompletionMessageParam],
         response_format: Type[str] = str,
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse: ...
+    ) -> AgentResponse[str]: ...
 
     @overload
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: Type[TBaseModel],
+        response_format: Type[TAgentResponseContentType],
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse: ...
+    ) -> AgentResponse[TAgentResponseContentType]: ...
 
     @abstractmethod
     def get_response(
         self,
         messages: List[ChatCompletionMessageParam],
-        response_format: Type[BaseModel] | Type[str] = str,
+        response_format: Type[TAgentResponseContentType] = str,
         tools: List["Tool"] | None = None,
-    ) -> AgentResponse:
+    ) -> AgentResponse[TAgentResponseContentType]:
         raise NotImplementedError

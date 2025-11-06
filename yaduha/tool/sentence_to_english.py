@@ -1,20 +1,22 @@
 
 
 import json
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar, Generic, List, Tuple, Type, Dict, cast
 from yaduha.language import Sentence
 
 from yaduha.tool import Tool
 from yaduha.agent import Agent, AgentResponse
+from yaduha.tool.english_to_sentences import TSentenceType
 
-class SentenceToEnglishTool(Tool):
-    agent: "Agent"
+class SentenceToEnglishTool(Tool[AgentResponse[str]], Generic[TSentenceType]):
+    agent: Agent
     name: ClassVar[str] = "sentence_to_english"
     description: ClassVar[str] = "Translate a structured sentence into natural English."
+    SentenceType: Type[TSentenceType] | Tuple[Type[Sentence], ...]
 
-    def __call__(self, sentence: Sentence) -> AgentResponse:
+    def _run(self, sentence: TSentenceType) -> AgentResponse:
         example_messages = []
-        for english, example_sentence in sentence.get_examples():
+        for english, example_sentence in cast(List[Tuple[str, TSentenceType]], sentence.get_examples()):
             example_messages.append({
                 "role": "user",
                 "content": json.dumps(example_sentence.model_dump_json(), ensure_ascii=False)
@@ -41,3 +43,25 @@ class SentenceToEnglishTool(Tool):
             ]
         )
         return response
+
+    def get_examples(self) -> List[Tuple[Dict[str, TSentenceType], AgentResponse]]:
+        import random
+        examples = []
+        if isinstance(self.SentenceType, tuple):
+            sentence_types = self.SentenceType
+        else:
+            sentence_types = (self.SentenceType,)
+        for SentenceType in sentence_types:
+            for english, example_sentence in SentenceType.get_examples():
+                examples.append(
+                    (
+                        {"sentence": example_sentence},
+                        AgentResponse(
+                            content=english,
+                            response_time=random.uniform(0.1, 0.5),
+                            prompt_tokens=random.randint(10, 300),
+                            completion_tokens=random.randint(10, 50)
+                        )
+                    )
+                )
+        return examples

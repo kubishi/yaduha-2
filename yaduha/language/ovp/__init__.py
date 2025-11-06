@@ -1,100 +1,10 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Tuple, Type, Union
 from enum import Enum
 from random import choice, randint
-from dataclasses import dataclass
 
-from yaduha.language import Sentence
-
-# ============================================================================
-# VOCABULARY DEFINITIONS - **ONLY** PLACE TO ADD NEW WORDS!
-# ============================================================================
-
-@dataclass(frozen=True)
-class VocabEntry:
-    """Immutable vocabulary entry linking English and the target language"""
-    english: str
-    target: str
-
-# Define all vocabulary in one place - this is the ONLY place you need to edit!
-NOUNS = [
-    VocabEntry("coyote", "isha'"),
-    VocabEntry("dog", "ishapugu"),
-    VocabEntry("cat", "kidi'"),
-    VocabEntry("horse", "pugu"),
-    VocabEntry("rice", "wai"),
-    VocabEntry("pinenuts", "tüba"),
-    VocabEntry("corn", "maishibü"),
-    VocabEntry("water", "paya"),
-    VocabEntry("river", "payahuupü"),
-    VocabEntry("chair", "katünu"),
-    VocabEntry("mountain", "toyabi"),
-    VocabEntry("food", "tuunapi"),
-    VocabEntry("tree", "pasohobü"),
-    VocabEntry("house", "nobi"),
-    VocabEntry("wickiup", "toni"),
-    VocabEntry("cup", "apo"),
-    VocabEntry("wood", "küna"),
-    VocabEntry("rock", "tübbi"),
-    VocabEntry("cottontail", "tabuutsi'"),
-    VocabEntry("jackrabbit", "kamü"),
-    VocabEntry("apple", "aaponu'"),
-    VocabEntry("weasle", "tüsüga"),
-    VocabEntry("lizard", "mukita"),
-    VocabEntry("mosquito", "wo'ada"),
-    VocabEntry("bird_snake", "wükada"),
-    VocabEntry("worm", "wo'abi"),
-    VocabEntry("squirrel", "aingwü"),
-    VocabEntry("bird", "tsiipa"),
-    VocabEntry("earth", "tüwoobü"),
-    VocabEntry("coffee", "koopi'"),
-    VocabEntry("bear", "pahabichi"),
-    VocabEntry("fish", "pagwi"),
-    VocabEntry("tail", "kwadzi"),
-]
-
-TRANSITIVE_VERBS = [
-    VocabEntry("eat", "tüka"),
-    VocabEntry("see", "puni"),
-    VocabEntry("drink", "hibi"),
-    VocabEntry("hear", "naka"),
-    VocabEntry("smell", "kwana"),
-    VocabEntry("hit", "kwati"),
-    VocabEntry("talk_to", "yadohi"),
-    VocabEntry("chase", "naki"),
-    VocabEntry("climb", "tsibui"),
-    VocabEntry("cook", "sawa"),
-    VocabEntry("read", "nia"),
-    VocabEntry("write", "mui"),
-    VocabEntry("visit", "nobini"),
-    VocabEntry("find", "tama'i"),
-]
-
-INTRANSITIVE_VERBS = [
-    VocabEntry("sit", "katü"),
-    VocabEntry("sleep", "üwi"),
-    VocabEntry("sneeze", "kwisha'i"),
-    VocabEntry("run", "poyoha"),
-    VocabEntry("go", "mia"),
-    VocabEntry("walk", "hukaw̃ia"),
-    VocabEntry("stand", "wünü"),
-    VocabEntry("lie_down", "habi"),
-    VocabEntry("talk", "yadoha"),
-    VocabEntry("fall", "kwatsa'i"),
-    VocabEntry("work", "waakü"),
-    VocabEntry("smile", "wükihaa"),
-    VocabEntry("sing", "hubiadu"),
-    VocabEntry("laugh", "nishua'i"),
-    VocabEntry("climb", "tsibui"),
-    VocabEntry("play", "tübinohi"),
-    VocabEntry("fly", "yotsi"),
-    VocabEntry("dance", "nüga"),
-    VocabEntry("swim", "pahabi"),
-    VocabEntry("read", "tünia"),
-    VocabEntry("write", "tümui"),
-    VocabEntry("chirp", "tsiipe'i"),
-]
-
+from yaduha.language import Sentence, VocabEntry
+from yaduha.language.ovp.vocab import NOUNS, TRANSITIVE_VERBS, INTRANSITIVE_VERBS
 
 # Lookup dictionaries for easy access
 NOUN_LOOKUP: Dict[str, VocabEntry] = {entry.english: entry for entry in NOUNS}
@@ -115,6 +25,22 @@ def get_verb_target(lemma: str) -> str:
     if lemma in TRANSITIVE_VERB_LOOKUP:
         return TRANSITIVE_VERB_LOOKUP[lemma].target
     return INTRANSITIVE_VERB_LOOKUP[lemma].target
+
+LENIS_MAP = {
+    'p': 'b',
+    't': 'd',
+    'k': 'g',
+    's': 'z',
+    'm': 'w̃'
+}
+
+def to_lenis(word: str) -> str:
+    """Convert a word to its lenis form"""
+    first_letter = word[0]
+    if first_letter in LENIS_MAP:
+        return LENIS_MAP[first_letter] + word[1:]
+    else:
+        return word
 
 
 # ============================================================================
@@ -152,26 +78,26 @@ class Inclusivity(str, Enum):
     exclusive = "exclusive"
 
 class TenseAspect(str, Enum):
-    past_continuous = "past-continuous"
-    past_simple = "past-simple"
-    present_perfect = "present-perfect"
-    present_continuous = "present-continuous"
-    present_simple = "present-simple"
-    future_simple = "future-simple"
+    past_simple = "past_simple"
+    past_continuous = "past_continuous"
+    present_perfect = "present_perfect"
+    present_simple = "present_simple"
+    present_continuous = "present_continuous"
+    future_simple = "future_simple"
 
     def get_suffix(self) -> str:
-        if self == TenseAspect.past_continuous or self == TenseAspect.present_continuous:
-            return "ti"
-        elif self == TenseAspect.past_simple:
+        if self == TenseAspect.past_simple:
             return "ku"
+        elif self in (TenseAspect.past_continuous, TenseAspect.present_continuous):
+            return "ti"
         elif self == TenseAspect.present_perfect:
             return "pü"
         elif self == TenseAspect.present_simple:
             return "dü"
         elif self == TenseAspect.future_simple:
             return "wei"
-        else:
-            raise ValueError("Invalid tense/aspect combination")
+
+        raise ValueError("Invalid tense/aspect combination")
 
 # ============================================================================
 # PYDANTIC MODELS
@@ -263,6 +189,24 @@ class Verb(BaseModel):
             raise ValueError(f"Invalid verb: {v}")
         return v
 
+class TransitiveVerb(Verb):
+    lemma: str = Field(
+        ...,
+        json_schema_extra={
+            'enum': [entry.english for entry in TRANSITIVE_VERBS],
+            'description': 'A transitive verb lemma'
+        }
+    )
+
+class IntransitiveVerb(Verb):
+    lemma: str = Field(
+        ...,
+        json_schema_extra={
+            'enum': [entry.english for entry in INTRANSITIVE_VERBS],
+            'description': 'An intransitive verb lemma'
+        }
+    )
+
 class Noun(BaseModel):
     head: str = Field(
         ...,
@@ -295,37 +239,11 @@ class ObjectNoun(Noun):
             reflexive=False
         ).get_object_pronoun()
 
-class SentenceOVP(Sentence):
+class SubjectVerbSentence(Sentence["SubjectVerbSentence"]):
     subject: Union[SubjectNoun, Pronoun]
-    verb: Verb
-    object: Optional[Union[ObjectNoun, Pronoun]] = None
+    verb: TransitiveVerb | IntransitiveVerb
 
     def __str__(self) -> str:
-        object_pronoun_prefix = None
-        if isinstance(self.object, Pronoun):
-            object_pronoun_prefix = self.object.get_object_pronoun()
-        elif isinstance(self.object, ObjectNoun):
-            object_pronoun_prefix = self.object.get_matching_pronoun_prefix()
-
-        verb_stem = get_transitive_verb_target(self.verb.lemma) if self.object is not None else get_intransitive_verb_target(self.verb.lemma)
-        verb_str = ""
-        verb_suffix = self.verb.tense_aspect.get_suffix()
-        if object_pronoun_prefix is None:
-            verb_str = f"{verb_stem}-{verb_suffix}"
-        else:
-            verb_stem = to_lenis(verb_stem)
-            verb_str = f"{object_pronoun_prefix}-{verb_stem}-{verb_suffix}"
-
-        object_str = None
-        if isinstance(self.object, ObjectNoun):
-            if isinstance(self.object.head, Pronoun):
-                object_str = None
-            else:
-                target_word = get_noun_target(self.object.head)
-                does_end_in_glottal = target_word.endswith("'")
-                object_suffix = self.object.proximity.get_object_suffix(does_end_in_glottal)
-                object_str = f"{target_word}-{object_suffix}"
-
         subject_str = None
         if isinstance(self.subject, Pronoun):
             subject_str = self.subject.get_subject_pronoun()
@@ -337,13 +255,14 @@ class SentenceOVP(Sentence):
                 subject_suffix = self.subject.proximity.get_subject_suffix()
                 subject_str = f"{target_word}-{subject_suffix}"
 
-        if object_str is None:
-            return f"{verb_str} {subject_str}"
-        else:
-            return f"{subject_str} {object_str} {verb_str}"
+        verb_stem = get_verb_target(self.verb.lemma)
+        verb_suffix = self.verb.tense_aspect.get_suffix()
+        verb_str = f"{verb_stem}-{verb_suffix}"
 
+        return f"{subject_str} {verb_str}"
+    
     @classmethod
-    def sample_iter(cls, n: int) -> Generator['SentenceOVP', None, None]:
+    def sample_iter(cls, n: int) -> Generator['SubjectVerbSentence', None, None]:
         """Generate n sample sentences (string representations)"""
         for _ in range(n):
             # Random subject
@@ -363,60 +282,167 @@ class SentenceOVP(Sentence):
                 )
 
             # Random verb
-            verb_lemma = choice(list(TRANSITIVE_VERB_LOOKUP.keys()) + list(INTRANSITIVE_VERB_LOOKUP.keys()))
-            verb = Verb(
+            if randint(0, 1) == 0:
+                verb = IntransitiveVerb(
+                    lemma=choice(list(INTRANSITIVE_VERB_LOOKUP.keys())),
+                    tense_aspect=choice(list(TenseAspect))
+                )
+            else:
+                verb = TransitiveVerb(
+                    lemma=choice(list(TRANSITIVE_VERB_LOOKUP.keys())),
+                    tense_aspect=choice(list(TenseAspect))
+                )
+
+            yield cls(subject=subject, verb=verb)
+
+    @classmethod
+    def get_examples(cls) -> List[Tuple[str, "SubjectVerbSentence"]]:
+        examples = [
+            (
+                "I sleep.",
+                SubjectVerbSentence(
+                    subject=Pronoun(
+                        person=Person.first,
+                        plurality=Plurality.singular,
+                        proximity=Proximity.proximal,
+                        inclusivity=Inclusivity.exclusive,
+                        reflexive=False
+                    ),
+                    verb=IntransitiveVerb(
+                        lemma="sleep",
+                        tense_aspect=TenseAspect.present_simple
+                    )
+                )
+            ),
+            (
+                "The coyote runs.",
+                SubjectVerbSentence(
+                    subject=SubjectNoun(
+                        head="coyote",
+                        proximity=Proximity.distal,
+                        plurality=Plurality.singular
+                    ),
+                    verb=IntransitiveVerb(
+                        lemma="run",
+                        tense_aspect=TenseAspect.present_simple
+                    )
+                )
+            ),
+            (
+                "The mountains will hit.",
+                SubjectVerbSentence(
+                    subject=SubjectNoun(
+                        head="mountain",
+                        proximity=Proximity.distal,
+                        plurality=Plurality.plural
+                    ),
+                    verb=IntransitiveVerb(
+                        lemma="hit",
+                        tense_aspect=TenseAspect.future_simple
+                    )
+                )
+            )
+        ]
+
+        return examples
+
+class SubjectVerbObjectSentence(Sentence["SubjectVerbObjectSentence"]):
+    subject: Union[SubjectNoun, Pronoun]
+    verb: TransitiveVerb
+    object: Union[ObjectNoun, Pronoun]
+
+    def __str__(self) -> str:
+        object_pronoun_prefix = None
+        if isinstance(self.object, Pronoun):
+            object_pronoun_prefix = self.object.get_object_pronoun()
+        elif isinstance(self.object, ObjectNoun):
+            object_pronoun_prefix = self.object.get_matching_pronoun_prefix()
+
+        verb_stem = get_transitive_verb_target(self.verb.lemma) if self.object is not None else get_intransitive_verb_target(self.verb.lemma)
+        verb_str = ""
+        verb_suffix = self.verb.tense_aspect.get_suffix()
+        verb_stem = to_lenis(verb_stem)
+        verb_str = f"{object_pronoun_prefix}-{verb_stem}-{verb_suffix}"
+
+        object_str = None
+        if isinstance(self.object, ObjectNoun):
+            target_word = get_noun_target(self.object.head)
+            does_end_in_glottal = target_word.endswith("'")
+            object_suffix = self.object.proximity.get_object_suffix(does_end_in_glottal)
+            object_str = f"{target_word}-{object_suffix}"
+
+        subject_str = None
+        if isinstance(self.subject, Pronoun):
+            subject_str = self.subject.get_subject_pronoun()
+        elif isinstance(self.subject, SubjectNoun):
+            if isinstance(self.subject.head, Pronoun):
+                subject_str = None
+            else:
+                target_word = get_noun_target(self.subject.head)
+                subject_suffix = self.subject.proximity.get_subject_suffix()
+                subject_str = f"{target_word}-{subject_suffix}"
+
+        if object_str is None:
+            return f"{verb_str} {subject_str}"
+        else:
+            return f"{subject_str} {object_str} {verb_str}"
+
+    @classmethod
+    def sample_iter(cls, n: int) -> Generator['SubjectVerbObjectSentence', None, None]:
+        """Generate n sample sentences (string representations)"""
+        for _ in range(n):
+            # Random subject
+            if randint(0, 1) == 0:
+                subject = Pronoun(
+                    person=choice(list(Person)),
+                    plurality=choice(list(Plurality)),
+                    proximity=choice(list(Proximity)),
+                    inclusivity=choice(list(Inclusivity)),
+                    reflexive=False
+                )
+            else:
+                subject = SubjectNoun(
+                    head=choice(list(NOUN_LOOKUP.keys())),
+                    proximity=choice(list(Proximity)),
+                    plurality=choice(list(Plurality))
+                )
+
+            # Random verb
+            verb_lemma = choice(list(TRANSITIVE_VERB_LOOKUP.keys()))
+            verb = TransitiveVerb(
                 lemma=verb_lemma,
                 tense_aspect=choice(list(TenseAspect))
             )
 
             # Random object for transitive verbs
-            obj = None
-            if verb_lemma in list(TRANSITIVE_VERB_LOOKUP.keys()):
-                if randint(0, 1) == 0:
-                    obj = ObjectNoun(
-                        head=choice(list(NOUN_LOOKUP.keys())),
-                        proximity=choice(list(Proximity)),
-                        plurality=choice(list(Plurality))
-                    )
-                else:
-                    obj = Pronoun(
-                        person=choice(list(Person)),
-                        plurality=choice(list(Plurality)),
-                        proximity=choice(list(Proximity)),
-                        inclusivity=choice(list(Inclusivity)),
-                        reflexive=False
-                    )
+            if randint(0, 1) == 0:
+                obj = ObjectNoun(
+                    head=choice(list(NOUN_LOOKUP.keys())),
+                    proximity=choice(list(Proximity)),
+                    plurality=choice(list(Plurality))
+                )
+            else:
+                obj = Pronoun(
+                    person=choice(list(Person)),
+                    plurality=choice(list(Plurality)),
+                    proximity=choice(list(Proximity)),
+                    inclusivity=choice(list(Inclusivity)),
+                    reflexive=False
+                )
 
             yield cls(subject=subject, verb=verb, object=obj)
 
     @classmethod
-    def sample(cls, n: int) -> List['SentenceOVP']:
+    def sample(cls, n: int) -> List['SubjectVerbObjectSentence']:
         """Generate n sample sentences (string representations)"""
         return list(cls.sample_iter(n))
 
     @classmethod
-    def get_examples(cls) -> List[Tuple[str, "SentenceOVP"]]:
+    def get_examples(cls) -> List[Tuple[str, "SubjectVerbObjectSentence"]]:
         examples = [
             (
-                "You and I will run.",
-                SentenceOVP(
-                    subject=Pronoun(
-                        person=Person.first,
-                        plurality=Plurality.dual,
-                        proximity=Proximity.proximal,
-                        inclusivity=Inclusivity.exclusive,
-                        reflexive=False
-                    ),
-                    verb=Verb(
-                        lemma="run",
-                        tense_aspect=TenseAspect.future_simple,
-                    ),
-                    object=None
-                )
-            ),
-            (
                 "You read the mountains.",
-                SentenceOVP(
+                SubjectVerbObjectSentence(
                     subject=Pronoun(
                         person=Person.second,
                         plurality=Plurality.singular,
@@ -424,9 +450,9 @@ class SentenceOVP(Sentence):
                         inclusivity=Inclusivity.exclusive,
                         reflexive=False
                     ),
-                    verb=Verb(
+                    verb=TransitiveVerb(
                         lemma="read",
-                        tense_aspect=TenseAspect.present_simple,
+                        tense_aspect=TenseAspect.present_simple
                     ),
                     object=ObjectNoun(
                         head="mountain",
@@ -436,31 +462,37 @@ class SentenceOVP(Sentence):
                 ),
             ),
             (
-                "That worm will dance.",
-                SentenceOVP(
+                "That worm will hear it.",
+                SubjectVerbObjectSentence(
                     subject=SubjectNoun(
                         head="worm",
                         proximity=Proximity.distal,
                         plurality=Plurality.singular
                     ),
-                    verb=Verb(
-                        lemma="dance",
-                        tense_aspect=TenseAspect.future_simple,
+                    verb=TransitiveVerb(
+                        lemma="hear",
+                        tense_aspect=TenseAspect.future_simple
                     ),
-                    object=None
+                    object=Pronoun(
+                        person=Person.third,
+                        plurality=Plurality.singular,
+                        proximity=Proximity.distal,
+                        inclusivity=Inclusivity.exclusive,
+                        reflexive=False
+                    )
                 )
             ),
             (
-                "That food has cooked this weasle.",
-                SentenceOVP(
+                "That food cooks this weasle.",
+                SubjectVerbObjectSentence(
                     subject=SubjectNoun(
                         head="food",
                         proximity=Proximity.distal,
                         plurality=Plurality.singular
                     ),
-                    verb=Verb(
+                    verb=TransitiveVerb(
                         lemma="cook",
-                        tense_aspect=TenseAspect.present_perfect,
+                        tense_aspect=TenseAspect.present_simple
                     ),
                     object=ObjectNoun(
                         head="weasle",
@@ -472,25 +504,4 @@ class SentenceOVP(Sentence):
         ]
 
         return examples
-
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-LENIS_MAP = {
-    'p': 'b',
-    't': 'd',
-    'k': 'g',
-    's': 'z',
-    'm': 'w̃'
-}
-
-def to_lenis(word: str) -> str:
-    """Convert a word to its lenis form"""
-    first_letter = word[0]
-    if first_letter in LENIS_MAP:
-        return LENIS_MAP[first_letter] + word[1:]
-    else:
-        return word
-
 

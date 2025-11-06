@@ -1,6 +1,6 @@
 from yaduha.translator.pipeline import PipelineTranslator
 from yaduha.agent.openai import OpenAIAgent
-from yaduha.language.ovp import SentenceOVP
+from yaduha.language.ovp import SubjectVerbSentence, SubjectVerbObjectSentence
 
 from dotenv import load_dotenv
 import os
@@ -13,10 +13,11 @@ def main():
             model="gpt-4o-mini",
             api_key=os.environ["OPENAI_API_KEY"]
         ),
-        SentenceType=SentenceOVP
+        SentenceType=(SubjectVerbObjectSentence, SubjectVerbSentence)
     )
 
-    print(translator("The dog is lapping up some water."))
+    translation = translator("The dog is sitting at the lakeside, drinking some water.")
+    print(translation.model_dump_json())
 
 if __name__ == "__main__":
     main()
