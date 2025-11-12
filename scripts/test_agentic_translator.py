@@ -9,6 +9,9 @@ from yaduha.tool import Tool
 from typing import ClassVar, List, Dict, Tuple
 from dotenv import load_dotenv
 import os
+import wandb
+import weave
+
 
 load_dotenv()
 
@@ -79,6 +82,13 @@ class SearchSentencesTool(Tool):
         return infos
 
 def main():
+    run = wandb.init(
+        project="kubishi",
+        config = {
+            "app": "yaduha",
+        }
+    )
+
     agent = OpenAIAgent(
         model="gpt-4o-mini",
         api_key=os.environ["OPENAI_API_KEY"]
@@ -101,9 +111,13 @@ def main():
         ]
     )
 
-    print(translator("I am going to the store."))
+    translation = translator("I am going to the store.")
+    run.log({"chat/response": translator.model_dump_json()})
 
+    print("uploading data: ", translation)
 
+    run.finish()
+    
 if __name__ == "__main__":
     main()
 

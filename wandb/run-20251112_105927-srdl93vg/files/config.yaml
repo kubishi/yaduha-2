@@ -1,0 +1,43 @@
+_wandb:
+    value:
+        cli_version: 0.22.3
+        e:
+            0qd5odli05wmvkdn0fnqx6zl540un2v1:
+                codePath: scripts/test_wandb.py
+                codePathLocal: scripts/test_wandb.py
+                cpu_count: 6
+                cpu_count_logical: 12
+                disk:
+                    /:
+                        total: "1081101176832"
+                        used: "67416231936"
+                email: cuadrosda21@gmail.com
+                executable: /home/diegocuadros/miniconda3/envs/kubishi/bin/python
+                git:
+                    commit: 8907323c74344fed0f28e98664987bb9989972d7
+                    remote: https://github.com/kubishi/yaduha-2.git
+                host: StarDestroyer
+                memory:
+                    total: "8163377152"
+                os: Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39
+                program: /home/diegocuadros/research/yaduha-2/scripts/test_wandb.py
+                python: CPython 3.11.8
+                root: /home/diegocuadros/research/yaduha-2
+                startedAt: "2025-11-12T18:59:27.327858Z"
+                writerId: 0qd5odli05wmvkdn0fnqx6zl540un2v1
+        m: []
+        python_version: 3.11.8
+        t:
+            "1":
+                - 95
+            "2":
+                - 95
+            "3":
+                - 2
+                - 16
+            "4": 3.11.8
+            "5": 0.22.3
+            "12": 0.22.3
+            "13": linux-x86_64
+app:
+    value: yaduha
