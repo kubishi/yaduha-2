@@ -1,8 +1,7 @@
-from openai import project
-from pydantic import BaseModel
+from re import A
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from abc import abstractmethod, ABC
-from typing import Any, Dict
-import os
+from typing import Any, Dict, Mapping, Optional
 from dotenv import load_dotenv
 
 import wandb
@@ -15,29 +14,46 @@ class Logger(BaseModel, ABC):
         pass
 
 class WandbLogger(Logger):
-    project_name: str
-    config_items = None
+    model_config = ConfigDict(populate_by_name=True)
 
-    def start(self, project: str, config: Dict[str, Any]) -> None:
-        self.project_name = project
-        self.config_items = config
-
-        self.run = wandb.init(
-            project=self.project_name,
-            config = self.config_items
-        )
-        
-        return
-
-    def log(self, data: Dict[str, Any]) -> None:        
-        wandb.log(data)
-        return
-
-    def stop(self):
-        self.run.finish()
-        return
+    project_name: str = Field(..., description="The W&B project name.", alias="project")
+    name: str
+    config_items: Dict[str, Any] = Field(default_factory=dict, description="The W&B config items.", alias="config")
     
+    _run: Any = PrivateAttr(default=None)
+
+    def model_post_init(self, __context: Any) -> None:
+        """
+        Called by Pydantic *after* the model has been initialized and validated.
+        This is the right place for side effects like wandb.init().
+        """
+        self._run = wandb.init(
+            project=self.project_name,
+            config=self.config_items,
+            name=self.name,
+        )
+
+
+    def log(self, data: Mapping[str, Any], **kwargs: Any) -> None:
+        """
+        Log a dictionary of metrics to this W&B run.
+
+        Args:
+            data: Metrics to log.
+            step: Optional global step (epoch, iteration, etc.).
+            **kwargs: Forwarded to Run.log (e.g., commit=False).
+        """
+        if self._run is None:
+            raise RuntimeError("Cannot log: W&B run is not active.")
+
+        self._run.log(dict(data), **kwargs)
+
+    def stop(self) -> None:
+        """Finish the W&B run if it is still active."""
+        if self._run is not None:
+            self._run.finish()
+            self._run = None
 
 class PrintLogger(Logger):
-    def log(self, data: Dict):
+    def log(self, data: Dict[str, Any]):
         print(data)

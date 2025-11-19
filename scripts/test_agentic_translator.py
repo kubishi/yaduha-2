@@ -1,4 +1,5 @@
 import requests
+from yaduha.logger import WandbLogger
 from yaduha.translator.pipeline import PipelineTranslator
 from yaduha.translator.agentic import AgenticTranslator
 from yaduha.agent.openai import OpenAIAgent
@@ -49,6 +50,11 @@ class SearchEnglishTool(Tool):
             } for item in res_json
         ]
 
+        self.log_items({
+            "tool/search_english/query": query,
+            "tool/search_english/results": results
+        })
+
         return results
         
 class SearchPaiuteTool(Tool):
@@ -61,6 +67,8 @@ class SearchPaiuteTool(Tool):
         response = requests.get(f"{SearchPaiuteTool.KUBISHI_API_URL}/search/paiute", params={"query": query, "limit": limit})
         response.raise_for_status()
         res_json: List[Dict] = response.json()
+
+        
         return format_word(res_json)
 
 class SearchSentencesTool(Tool):
@@ -79,14 +87,17 @@ class SearchSentencesTool(Tool):
                 "sentence": sentence["sentence"],
                 "translation": sentence["translation"]
             })
+        
+        self.log_items({
+            "tool/search_sentences/query": query,
+            "tool/search_sentences/results": infos
+        })
         return infos
 
 def main():
-    run = wandb.init(
+    logger = WandbLogger(
         project="kubishi",
-        config = {
-            "app": "yaduha",
-        }
+        name="test-agentic-translator",
     )
 
     agent = OpenAIAgent(
@@ -108,16 +119,14 @@ def main():
                 agent=agent,
                 SentenceType=(SubjectVerbObjectSentence, SubjectVerbSentence)
             )
-        ]
+        ],
+        logger=logger
     )
 
     translation = translator("I am going to the store.")
-    run.log({"chat/response": translator.model_dump_json()})
 
-    print("uploading data: ", translation)
+    logger.stop()
 
-    run.finish()
-    
 if __name__ == "__main__":
     main()
 

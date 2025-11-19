@@ -1,24 +1,23 @@
 import os
 from dotenv import load_dotenv
-import wandb
-import weave
+from openai import project
 
 from yaduha import agent
 from yaduha.agent.openai import OpenAIAgent
 from yaduha.translator.pipeline import PipelineTranslator
 from yaduha.language.ovp import SubjectVerbSentence, SubjectVerbObjectSentence
+from yaduha.logger import PrintLogger, WandbLogger
+
+import weave
 
 load_dotenv()
 
 def main():
-    # Start a new wandb run to track this script.
-    run = wandb.init(
-        # Set the wandb project where this run will be logged.
+
+
+    logger = WandbLogger(
         project="kubishi",
-        # Track hyperparameters and run metadata.
-        config={
-            "app": "yaduha",
-        },
+        name="test3",
     )
 
     translator = PipelineTranslator(
@@ -26,14 +25,12 @@ def main():
             model="gpt-4o-mini",
             api_key=os.environ["OPENAI_API_KEY"]
         ),
-        SentenceType=(SubjectVerbObjectSentence, SubjectVerbSentence)
+        SentenceType=(SubjectVerbObjectSentence, SubjectVerbSentence),
+        logger = logger
     )
 
     translation = translator("The dog is sleeping.")
-    run.log({"chat/response": translation.model_dump_json()})
-    print("uploading data", translation)
-    # Finish the run and upload any remaining data.
-    run.finish()
-
+    
+    logger.stop()
 if __name__ == "__main__":
     main()

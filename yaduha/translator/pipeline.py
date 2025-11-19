@@ -1,8 +1,9 @@
 import random
 import re
 import time
-from typing import ClassVar, Dict, Generic, List, Type, Tuple
+from typing import ClassVar, Dict, Generic, List, Optional, Type, Tuple
 
+from yaduha.logger import Logger
 from yaduha.translator import Translator, Translation, BackTranslation
 from yaduha.tool.english_to_sentences import EnglishToSentencesTool, TSentenceType
 from yaduha.tool.sentence_to_english import SentenceToEnglishTool
@@ -31,11 +32,13 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
         start_time = time.time()
         translate_input_to_sentences = EnglishToSentencesTool(
             agent=self.agent,
-            SentenceType=self.SentenceType
+            SentenceType=self.SentenceType,
+            logger=self.logger
         )
         translate_sentence_to_english = SentenceToEnglishTool(
             agent=self.agent,
-            SentenceType=self.SentenceType
+            SentenceType=self.SentenceType,
+            logger = self.logger
         )
 
         def clean_text(s: str) -> str:
@@ -65,6 +68,17 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             prompt_tokens_bt += back_translation.prompt_tokens
             completion_tokens_bt += back_translation.completion_tokens
         end_time_bt = time.time()
+
+        self.log_items(data={
+            "chat/response": " ".join(targets), 
+            "chat/source": text,
+            "chat/translation_time": end_time - start_time,
+            "chat/prompt_tokens": prompt_tokens,
+            "chat/completion_tokens": completion_tokens,
+            "chat/back_translation_time": end_time_bt - start_time_bt,
+            "chat/back_translation_prompt_tokens": prompt_tokens_bt,
+            "chat/back_translation_completion_tokens": completion_tokens_bt
+        })
 
         return Translation(
             source=text,

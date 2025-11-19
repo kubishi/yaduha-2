@@ -1,12 +1,14 @@
 from functools import lru_cache
 from pydantic import BaseModel, Field, create_model
-from typing import Any, ClassVar, Dict, Generic, List, Tuple, TypeVar, get_origin, get_args, Union
+from typing import Any, ClassVar, Dict, Generic, List, Optional, Tuple, TypeVar, get_origin, get_args, Union
 from abc import abstractmethod
 import random
 import string
 import inspect
 
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
+
+from yaduha.logger import Logger
 
 def _add_additional_properties_false(schema: Dict | List) -> None:
     """Recursively add 'additionalProperties': False to all object schemas."""
@@ -23,6 +25,7 @@ _T = TypeVar("_T")
 class Tool(BaseModel, Generic[_T]):
     name: ClassVar[str] = Field(..., description="The name of the tool.")
     description: ClassVar[str] = Field(..., description="A description of what the tool does.")
+    logger: Optional[Logger] = Field(default=None, description="The logger to use for logging tool actions.")
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -68,6 +71,11 @@ class Tool(BaseModel, Generic[_T]):
             value or dict of kwargs matching the _run signature.
         """
         return []
+
+    # log() takes in a dictionary and logs onto wandb
+    def log_items(self, data: Dict[str, Any]):
+        if self.logger is not None:
+            self.logger.log(data)
 
     @classmethod
     @lru_cache(maxsize=None)

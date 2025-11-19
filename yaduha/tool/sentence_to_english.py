@@ -42,6 +42,15 @@ class SentenceToEnglishTool(Tool[AgentResponse[str]], Generic[TSentenceType]):
                 }
             ]
         )
+
+        self.log_items(data={
+                "tool/sentence_to_english/sentence": sentence.model_dump_json(),
+                "tool/sentence_to_english/response": response.content,
+                "tool/sentence_to_english/response_time": response.response_time,
+                "tool/sentence_to_english/prompt_tokens": response.prompt_tokens,
+                "tool/sentence_to_english/completion_tokens": response.completion_tokens,
+            })
+
         return response
 
     def get_examples(self) -> List[Tuple[Dict[str, TSentenceType], AgentResponse]]:

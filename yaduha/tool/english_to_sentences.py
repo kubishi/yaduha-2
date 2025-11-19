@@ -56,6 +56,15 @@ class EnglishToSentencesTool(Tool[AgentResponse[SentenceList[TSentenceType]]]):
             response_format=TargetSentenceList
         )
 
+        self.log_items(data={
+                "tool/english_to_sentences/content": english,
+                "tool/english_to_sentences/response": response.content.model_dump(),
+                "tool/english_to_sentences/response_time": response.response_time,
+                "tool/english_to_sentences/prompt_tokens": response.prompt_tokens,
+                "tool/english_to_sentences/completion_tokens": response.completion_tokens,
+            })
+
+
         return cast(AgentResponse[SentenceList[TSentenceType]], response)
 
     def get_examples(self) -> List[Tuple[Dict[str, str], AgentResponse[SentenceList[TSentenceType]]]]:
