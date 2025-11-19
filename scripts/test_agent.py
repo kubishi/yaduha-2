@@ -37,6 +37,7 @@ class SearchPeople(Tool):
     description: ClassVar[str] = "Search for people in our game."
 
     def _run(self, person: Person) -> list["Person"]:
+        #Is this an error? I'm pretty sure this needs to filter out a person from the list of people
         print(f"SearchPeople called with person={person}")
         results = [
             person for person in PEOPLE 
