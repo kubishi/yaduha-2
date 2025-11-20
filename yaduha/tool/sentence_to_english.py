@@ -4,6 +4,7 @@ import json
 from typing import ClassVar, Generic, List, Tuple, Type, Dict, cast
 from yaduha.language import Sentence
 
+from yaduha.logger import inject_logs
 from yaduha.tool import Tool
 from yaduha.agent import Agent, AgentResponse
 from yaduha.tool.english_to_sentences import TSentenceType
@@ -15,40 +16,41 @@ class SentenceToEnglishTool(Tool[AgentResponse[str]], Generic[TSentenceType]):
     SentenceType: Type[TSentenceType] | Tuple[Type[Sentence], ...]
 
     def _run(self, sentence: TSentenceType) -> AgentResponse:
-        example_messages = []
-        for english, example_sentence in cast(List[Tuple[str, TSentenceType]], sentence.get_examples()):
-            example_messages.append({
-                "role": "user",
-                "content": json.dumps(example_sentence.model_dump_json(), ensure_ascii=False)
-            })
-            example_messages.append({
-                "role": "assistant",
-                "content": english
-            })
-
-        response = self.agent.get_response(
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a translator that transforms structured sentences into natural English. "
-                        "The sentences may be strange and unusual, but you must translate them as accurately as possible. "
-                    )
-                },
-                *example_messages,
-                {
+        with inject_logs(tool="sentence_to_english"):
+            example_messages = []
+            for english, example_sentence in cast(List[Tuple[str, TSentenceType]], sentence.get_examples()):
+                example_messages.append({
                     "role": "user",
-                    "content": json.dumps(sentence.model_dump_json(), ensure_ascii=False)
-                }
-            ]
-        )
+                    "content": json.dumps(example_sentence.model_dump_json(), ensure_ascii=False)
+                })
+                example_messages.append({
+                    "role": "assistant",
+                    "content": english
+                })
 
-        self.log(data={
-                "tool/sentence_to_english/sentence": sentence.model_dump_json(),
-                "tool/sentence_to_english/response": response.content,
-                "tool/sentence_to_english/response_time": response.response_time,
-                "tool/sentence_to_english/prompt_tokens": response.prompt_tokens,
-                "tool/sentence_to_english/completion_tokens": response.completion_tokens,
+            response = self.agent.get_response(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a translator that transforms structured sentences into natural English. "
+                            "The sentences may be strange and unusual, but you must translate them as accurately as possible. "
+                        )
+                    },
+                    *example_messages,
+                    {
+                        "role": "user",
+                        "content": json.dumps(sentence.model_dump_json(), ensure_ascii=False)
+                    }
+                ]
+            )
+
+            self.log(data={
+                "sentence": sentence.model_dump_json(),
+                "response": response.content,
+                "response_time": response.response_time,
+                "prompt_tokens": response.prompt_tokens,
+                "completion_tokens": response.completion_tokens,
             })
 
         return response

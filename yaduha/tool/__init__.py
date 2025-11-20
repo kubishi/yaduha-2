@@ -8,7 +8,7 @@ import inspect
 
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from yaduha.logger import Logger
+from yaduha.logger import Logger, NoLogger
 
 def _add_additional_properties_false(schema: Dict | List) -> None:
     """Recursively add 'additionalProperties': False to all object schemas."""
@@ -25,7 +25,7 @@ _T = TypeVar("_T")
 class Tool(BaseModel, Generic[_T]):
     name: ClassVar[str] = Field(..., description="The name of the tool.")
     description: ClassVar[str] = Field(..., description="A description of what the tool does.")
-    logger: Optional[Logger] = Field(default=None, description="The logger to use for logging tool actions.")
+    logger: Logger = Field(default_factory=NoLogger, description="The logger to use for logging tool actions.")
 
     def __init__(self, **data: Any):
         super().__init__(**data)

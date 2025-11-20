@@ -9,16 +9,19 @@ from yaduha.language.ovp import SubjectVerbSentence, SubjectVerbObjectSentence
 from yaduha.logger import PrintLogger, WandbLogger
 
 import weave
+import uuid
 
 load_dotenv()
 
 def main():
-
-
-    logger = WandbLogger(
-        project="kubishi",
-        name="test3",
-    )
+    # logger = WandbLogger(
+    #     project="kubishi",
+    #     name="test3",
+    #     metadata={
+    #         "session_id": str(uuid.uuid4())
+    #     }
+    # )
+    logger = PrintLogger()
 
     translator = PipelineTranslator(
         agent=OpenAIAgent(
@@ -31,6 +34,8 @@ def main():
 
     translation = translator("The dog is sleeping.")
     
-    logger.stop()
+    # logger.stop()
+
+
 if __name__ == "__main__":
     main()

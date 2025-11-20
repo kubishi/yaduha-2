@@ -1,9 +1,11 @@
 import random
 import re
 import time
+from uuid import uuid4
 from typing import ClassVar, Dict, Generic, List, Optional, Type, Tuple
 
-from yaduha.logger import Logger
+from yaduha import logger
+from yaduha.logger import inject_logs
 from yaduha.translator import Translator, Translation, BackTranslation
 from yaduha.tool.english_to_sentences import EnglishToSentencesTool, TSentenceType
 from yaduha.tool.sentence_to_english import SentenceToEnglishTool
@@ -30,55 +32,60 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             Translation: The translation
         """
         start_time = time.time()
-        translate_input_to_sentences = EnglishToSentencesTool(
-            agent=self.agent,
-            SentenceType=self.SentenceType,
-            logger=self.logger
-        )
-        translate_sentence_to_english = SentenceToEnglishTool(
-            agent=self.agent,
-            SentenceType=self.SentenceType,
-            logger = self.logger
-        )
+        translation_id = str(uuid4())
+        with inject_logs(
+            tool="pipeline_translator",
+            translation_id=translation_id
+        ):
+            translate_input_to_sentences = EnglishToSentencesTool(
+                agent=self.agent,
+                SentenceType=self.SentenceType,
+                logger=self.logger
+            )
+            translate_sentence_to_english = SentenceToEnglishTool(
+                agent=self.agent,
+                SentenceType=self.SentenceType,
+                logger=self.logger
+            )
 
-        def clean_text(s: str) -> str:
-            s = s.strip()
-            # add a period if it doesn't end with punctuation
-            if not re.search(r'[.!?]$', s):
-                s += '.'
-            # capitalize the first letter
-            s = s[0].upper() + s[1:]
-            return s
+            def clean_text(s: str) -> str:
+                s = s.strip()
+                # add a period if it doesn't end with punctuation
+                if not re.search(r'[.!?]$', s):
+                    s += '.'
+                # capitalize the first letter
+                s = s[0].upper() + s[1:]
+                return s
 
-        sentences_response = translate_input_to_sentences(text)
-        end_time = time.time()
+            sentences_response = translate_input_to_sentences(text)
+            end_time = time.time()
 
-        targets = []
-        back_translations = []
-        prompt_tokens = sentences_response.prompt_tokens
-        completion_tokens = sentences_response.completion_tokens
-        prompt_tokens_bt = 0
-        completion_tokens_bt = 0
+            targets = []
+            back_translations = []
+            prompt_tokens = sentences_response.prompt_tokens
+            completion_tokens = sentences_response.completion_tokens
+            prompt_tokens_bt = 0
+            completion_tokens_bt = 0
 
-        start_time_bt = time.time()
-        for sentence in sentences_response.content.sentences:
-            targets.append(clean_text(str(sentence)))
-            back_translation = translate_sentence_to_english(sentence)
-            back_translations.append(clean_text(back_translation.content))
-            prompt_tokens_bt += back_translation.prompt_tokens
-            completion_tokens_bt += back_translation.completion_tokens
-        end_time_bt = time.time()
+            start_time_bt = time.time()
+            for sentence in sentences_response.content.sentences:
+                targets.append(clean_text(str(sentence)))
+                back_translation = translate_sentence_to_english(sentence)
+                back_translations.append(clean_text(back_translation.content))
+                prompt_tokens_bt += back_translation.prompt_tokens
+                completion_tokens_bt += back_translation.completion_tokens
+            end_time_bt = time.time()
 
-        self.log(data={
-            "chat/response": " ".join(targets), 
-            "chat/source": text,
-            "chat/translation_time": end_time - start_time,
-            "chat/prompt_tokens": prompt_tokens,
-            "chat/completion_tokens": completion_tokens,
-            "chat/back_translation_time": end_time_bt - start_time_bt,
-            "chat/back_translation_prompt_tokens": prompt_tokens_bt,
-            "chat/back_translation_completion_tokens": completion_tokens_bt
-        })
+            self.logger.log(data={
+                "response": " ".join(targets), 
+                "source": text,
+                "translation_time": end_time - start_time,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "back_translation_time": end_time_bt - start_time_bt,
+                "back_translation_prompt_tokens": prompt_tokens_bt,
+                "back_translation_completion_tokens": completion_tokens_bt
+            })
 
         return Translation(
             source=text,
