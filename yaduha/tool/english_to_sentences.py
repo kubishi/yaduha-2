@@ -56,7 +56,7 @@ class EnglishToSentencesTool(Tool[AgentResponse[SentenceList[TSentenceType]]]):
             response_format=TargetSentenceList
         )
 
-        self.log_items(data={
+        self.log(data={
                 "tool/english_to_sentences/content": english,
                 "tool/english_to_sentences/response": response.content.model_dump(),
                 "tool/english_to_sentences/response_time": response.response_time,

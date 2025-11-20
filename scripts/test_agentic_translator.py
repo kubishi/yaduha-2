@@ -50,7 +50,7 @@ class SearchEnglishTool(Tool):
             } for item in res_json
         ]
 
-        self.log_items({
+        self.log({
             "tool/search_english/query": query,
             "tool/search_english/results": results
         })
@@ -88,7 +88,7 @@ class SearchSentencesTool(Tool):
                 "translation": sentence["translation"]
             })
         
-        self.log_items({
+        self.log({
             "tool/search_sentences/query": query,
             "tool/search_sentences/results": infos
         })

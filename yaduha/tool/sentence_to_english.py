@@ -43,7 +43,7 @@ class SentenceToEnglishTool(Tool[AgentResponse[str]], Generic[TSentenceType]):
             ]
         )
 
-        self.log_items(data={
+        self.log(data={
                 "tool/sentence_to_english/sentence": sentence.model_dump_json(),
                 "tool/sentence_to_english/response": response.content,
                 "tool/sentence_to_english/response_time": response.response_time,

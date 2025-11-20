@@ -38,7 +38,8 @@ dependencies = [
     "pydantic",
     "python-dotenv",
     "requests",
-]
+    "weave
+,]
 
 [project.optional-dependencies]
 dev = [

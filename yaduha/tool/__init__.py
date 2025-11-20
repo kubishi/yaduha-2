@@ -72,8 +72,7 @@ class Tool(BaseModel, Generic[_T]):
         """
         return []
 
-    # log() takes in a dictionary and logs onto wandb
-    def log_items(self, data: Dict[str, Any]):
+    def log(self, data: Dict[str, Any]):
         if self.logger is not None:
             self.logger.log(data)
 

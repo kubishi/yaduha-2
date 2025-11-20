@@ -20,7 +20,7 @@ class WandbLogger(Logger):
     name: str
     config_items: Dict[str, Any] = Field(default_factory=dict, description="The W&B config items.", alias="config")
     
-    _run: Any = PrivateAttr(default=None)
+    _run: wandb.Run | None = PrivateAttr(default=None)
 
     def model_post_init(self, __context: Any) -> None:
         """

@@ -69,7 +69,7 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             completion_tokens_bt += back_translation.completion_tokens
         end_time_bt = time.time()
 
-        self.log_items(data={
+        self.log(data={
             "chat/response": " ".join(targets), 
             "chat/source": text,
             "chat/translation_time": end_time - start_time,
