@@ -44,39 +44,35 @@ class AgenticTranslator(Translator):
         description="A list of tools that the agent can use for translation.",
     )
 
-    def _run(self, text: str) -> Translation:
-        with inject_logs(
-            tool="agentic_translator",
-            translation_id=str(uuid4())
-        ):
-            start_time = time.time()
-            response = self.agent.get_response(
-                messages=[
-                    {
-                        "role": "system",
-                        "content": self.system_prompt,
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Translate the following text:\n\n{text}",
-                    }
-                ],
-                response_format=TranslationResponse,
-                tools=self.tools
-            )
-            end_time = time.time()
-
-            translation = Translation(
-                source=text,
-                target=response.content.translation,
-                translation_time=end_time - start_time,
-                prompt_tokens=response.prompt_tokens,
-                completion_tokens=response.completion_tokens,
-                back_translation=None,
-                metadata={
-                    "confidence_level": response.content.confidence,
-                    "evidence": [item.model_dump() for item in response.content.evidence],
+    def translate(self, text: str) -> Translation:
+        start_time = time.time()
+        response = self.agent.get_response(
+            messages=[
+                {
+                    "role": "system",
+                    "content": self.system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": f"Translate the following text:\n\n{text}",
                 }
-            )
+            ],
+            response_format=TranslationResponse,
+            tools=self.tools
+        )
+        end_time = time.time()
+
+        translation = Translation(
+            source=text,
+            target=response.content.translation,
+            translation_time=end_time - start_time,
+            prompt_tokens=response.prompt_tokens,
+            completion_tokens=response.completion_tokens,
+            back_translation=None,
+            metadata={
+                "confidence_level": response.content.confidence,
+                "evidence": [item.model_dump() for item in response.content.evidence],
+            }
+        )
 
         return translation

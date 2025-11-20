@@ -1,4 +1,6 @@
 from functools import lru_cache
+import os
+from uuid import uuid4
 from pydantic import BaseModel, Field, create_model
 from typing import Any, ClassVar, Dict, Generic, List, Optional, Tuple, TypeVar, get_origin, get_args, Union
 from abc import abstractmethod
@@ -8,7 +10,7 @@ import inspect
 
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from yaduha.logger import Logger, NoLogger
+from yaduha.logger import Logger, NoLogger, inject_logs
 
 def _add_additional_properties_false(schema: Dict | List) -> None:
     """Recursively add 'additionalProperties': False to all object schemas."""
@@ -51,7 +53,14 @@ class Tool(BaseModel, Generic[_T]):
                 issubclass(param.annotation, BaseModel) and
                 not isinstance(value, param.annotation)):
                 bound_args.arguments[name] = param.annotation(**value)
-        return self._run(*bound_args.args, **bound_args.kwargs)
+
+        yaduha_tool_call_id = os.environ.get("LOGGER_METADATA_YADUHA_TOOL_CALL_ID", "")
+        if not yaduha_tool_call_id:
+            yaduha_tool_call_id = str(uuid4())
+        else:
+            yaduha_tool_call_id = f"{yaduha_tool_call_id}/{str(uuid4())}"
+        with inject_logs(tool=self.name, yaduha_tool_call_id=yaduha_tool_call_id):
+            return self._run(*bound_args.args, **bound_args.kwargs)
 
     @abstractmethod
     def _run(self, *args, **kwargs) -> _T:
