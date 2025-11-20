@@ -34,6 +34,28 @@ def inject_logs(**data: str | int | float):
             else:
                 os.environ[env_key] = old_env[env_key]
 
+global_logger = None
+def set_global_logger(logger: "Logger") -> None:
+    """
+    Set the global logger.
+
+    Args:
+        logger: The logger to set as global.
+    """
+    global global_logger
+    global_logger = logger
+
+def get_global_logger() -> "Logger":
+    """
+    Get the global logger.
+
+    Returns:
+        The current global logger.
+    """
+    global global_logger
+    if global_logger is None:
+        global_logger = NoLogger()
+    return global_logger
 
 class Logger(BaseModel, ABC):
     metadata: Dict[str, str | int | float] = Field(default_factory=dict, description="Metadata for the logger.")

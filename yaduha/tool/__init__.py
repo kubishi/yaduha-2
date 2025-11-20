@@ -10,7 +10,7 @@ import inspect
 
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from yaduha.logger import Logger, NoLogger, inject_logs
+from yaduha.logger import Logger, get_global_logger, inject_logs
 
 def _add_additional_properties_false(schema: Dict | List) -> None:
     """Recursively add 'additionalProperties': False to all object schemas."""
@@ -27,7 +27,7 @@ _T = TypeVar("_T")
 class Tool(BaseModel, Generic[_T]):
     name: ClassVar[str] = Field(..., description="The name of the tool.")
     description: ClassVar[str] = Field(..., description="A description of what the tool does.")
-    logger: Logger = Field(default_factory=NoLogger, description="The logger to use for logging tool actions.")
+    logger: Logger = Field(default_factory=get_global_logger, description="The logger to use for logging tool actions.")
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -54,12 +54,12 @@ class Tool(BaseModel, Generic[_T]):
                 not isinstance(value, param.annotation)):
                 bound_args.arguments[name] = param.annotation(**value)
 
-        yaduha_tool_call_id = os.environ.get("LOGGER_METADATA_YADUHA_TOOL_CALL_ID", "")
-        if not yaduha_tool_call_id:
-            yaduha_tool_call_id = str(uuid4())
+        toolchain = os.environ.get("LOGGER_METADATA_TOOLCHAIN", "")
+        if not toolchain:
+            toolchain = str(uuid4())
         else:
-            yaduha_tool_call_id = f"{yaduha_tool_call_id}/{str(uuid4())}"
-        with inject_logs(tool=self.name, yaduha_tool_call_id=yaduha_tool_call_id):
+            toolchain = f"{toolchain}/{str(uuid4())}"
+        with inject_logs(tool=self.name, toolchain=toolchain):
             return self._run(*bound_args.args, **bound_args.kwargs)
 
     @abstractmethod
