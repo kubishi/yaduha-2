@@ -20,6 +20,17 @@ class Sentence(BaseModel, ABC, Generic[S]):
         """Render this sentence in the target language."""
         pass
 
+    def str_masked(self) -> str:
+        """Render this sentence in the target language with out-of-vocabulary
+        content words replaced by role-based placeholders (e.g. [NOUN], [VERB]).
+
+        The default implementation returns the same string as ``__str__``.
+        Language packages that emit ``[lemma]`` fallbacks for OOV vocab
+        should override this to produce a cheat-proof surface form that
+        hides the English lemma from downstream decoders.
+        """
+        return self.__str__()
+
     @classmethod
     @abstractmethod
     def get_examples(cls: type[S]) -> list[tuple[str, S]]:
