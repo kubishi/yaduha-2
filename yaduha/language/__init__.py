@@ -31,6 +31,26 @@ class Sentence(BaseModel, ABC, Generic[S]):
         """
         return self.__str__()
 
+    def masked_copy(self) -> tuple["Sentence", list[str]]:
+        """Return ``(copy_with_OOV_fields_masked, masked_tokens)``.
+
+        The returned copy has any vocabulary-constrained fields (e.g. noun
+        heads, verb lemmas) whose values fall outside the language's
+        vocabulary replaced with role-tagged sentinels like ``[NOUN]`` or
+        ``[VERB]``. The second element lists the original OOV tokens in the
+        order they were encountered.
+
+        This is used by the evaluation pipeline's "comparator" arm and by
+        the fine-tuning datagen to produce cheat-proof training pairs where
+        the downstream decoder cannot read English lemmas directly from the
+        structured JSON.
+
+        The default implementation returns an unmasked deep copy and an
+        empty token list. Language packages with vocabulary-constrained
+        fields should override this on each Sentence subclass.
+        """
+        return self.model_copy(deep=True), []
+
     @classmethod
     @abstractmethod
     def get_examples(cls: type[S]) -> list[tuple[str, S]]:
