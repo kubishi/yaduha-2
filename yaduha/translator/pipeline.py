@@ -77,7 +77,9 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
         )
 
         def clean_text(s: str) -> str:
+            # remove brackets and their contents - ie words in brackets are not translated are removed
             s = s.strip()
+            s = re.sub(r'\[[^\]]*\]', '', s).strip()
             # add a period if it doesn't end with punctuation
             if not re.search(r"[.!?]$", s):
                 s += "."
