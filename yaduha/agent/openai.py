@@ -11,7 +11,9 @@ from yaduha.tool import Tool
 
 
 class OpenAIAgent(Agent):
-    model: Literal["gpt-4o", "gpt-4o-mini", "gpt-5"]
+    model: Literal["gpt-4o", "gpt-4o-mini", "gpt-5"] | str = Field(
+        default="gpt-4o", description="The OpenAI model to use for generating responses."
+    )
     name: ClassVar[str] = "openai_agent"
     api_key: str = Field(..., description="The OpenAI API key.", exclude=True)
     temperature: float = Field(
