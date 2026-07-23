@@ -22,6 +22,7 @@ class Language:
         name: str,
         sentence_types: tuple[type[Any], ...],
         get_instructions: Callable[[], str] | None = None,
+        get_examples: Callable[[], list[tuple[str, list[Any]]]] | None = None,
     ) -> None:
         """Initialize a Language instance.
 
@@ -32,6 +33,12 @@ class Language:
             get_instructions: Optional callable that returns natural language
                 grammar instructions (vocabulary, rules, examples) suitable
                 for use as an LLM system prompt.
+            get_examples: Optional callable returning few-shot examples as
+                (english, [sentence, ...]) pairs. One English input maps to a
+                list of sentences (of possibly different types), so unlike
+                Sentence.get_examples() an example may decompose one input into
+                several. Omitted, get_examples() falls back to the per-type
+                singles from examples_from_sentence_types().
 
         Raises:
             ValueError: If code or name is empty, or sentence_types is empty
@@ -55,6 +62,31 @@ class Language:
         self.name: str = name
         self.sentence_types: tuple[type[Sentence], ...] = sentence_types
         self._get_instructions = get_instructions
+        self._get_examples = get_examples
+
+    @staticmethod
+    def examples_from_sentence_types(
+        sentence_types: tuple[type[Any], ...],
+    ) -> list[tuple[str, list[Any]]]:
+        """Each type's Sentence.get_examples(), each wrapped as a one-element list.
+
+        The default for get_examples(), and a building block languages reuse when
+        they add their own multi-sentence examples.
+        """
+        examples: list[tuple[str, list[Any]]] = []
+        for sentence_type in sentence_types:
+            for english, sentence in sentence_type.get_examples():
+                examples.append((english, [sentence]))
+        return examples
+
+    def get_examples(self) -> list[tuple[str, list[Any]]]:
+        """Few-shot examples as (english, [sentence, ...]) pairs.
+
+        Falls back to the per-type singles when no get_examples callable was given.
+        """
+        if self._get_examples:
+            return self._get_examples()
+        return self.examples_from_sentence_types(self.sentence_types)
 
     def get_instructions(self) -> str | None:
         """Return natural language grammar instructions for this language.

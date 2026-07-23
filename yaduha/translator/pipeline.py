@@ -27,6 +27,7 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
     back_translation_agent: Agent | None = None
     SentenceType: type[TSentenceType] | tuple[type[Sentence], ...]
     evaluators: Sequence[Evaluator] = Field(default_factory=list)
+    examples: list[tuple[str, list[Sentence]]] = Field(default_factory=list, description="Few-shot examples as (english, [sentence, ...]) pairs. Empty falls back to the per-type examples from each SentenceType.get_examples().")
 
     @classmethod
     def from_language(
@@ -56,6 +57,8 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
             back_translation_agent=back_translation_agent,
             SentenceType=language.sentence_types,
             evaluators=evaluators or [],
+            # getattr tolerates a Language from an older core without the method.
+            examples=getattr(language, "get_examples", list)(),
         )
 
     def translate(self, text: str) -> Translation:
@@ -68,7 +71,10 @@ class PipelineTranslator(Translator, Generic[TSentenceType]):
         """
         start_time = time.time()
         translate_input_to_sentences = EnglishToSentencesTool(
-            agent=self.agent, SentenceType=self.SentenceType, logger=self.logger
+            agent=self.agent,
+            SentenceType=self.SentenceType,
+            logger=self.logger,
+            examples=self.examples,
         )
         # Use back_translation_agent if provided, otherwise fall back to main agent
         bt_agent = self.back_translation_agent or self.agent

@@ -1,9 +1,10 @@
 import functools
+import json
 import operator
 import random
 from typing import ClassVar, Generic, TypeVar, cast
 
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel, Field, create_model
 
 from yaduha.agent import Agent, AgentResponse
 from yaduha.language import Sentence
@@ -22,6 +23,13 @@ class EnglishToSentencesTool(Tool[AgentResponse[SentenceList[TSentenceType]]]):
     name: ClassVar[str] = "english_to_sentences"
     description: ClassVar[str] = "Translate natural English into a structured sentence."
     SentenceType: type[TSentenceType] | tuple[type[Sentence], ...]
+    examples: list[tuple[str, list[Sentence]]] = Field(
+        default_factory=list, 
+        description=(
+            "Few-shot examples as (english, [sentence, ...]) pairs. "
+            "Empty falls back to the per-type examples from each SentenceType.get_examples()."
+        )
+    )
 
     def _run(self, english: str) -> AgentResponse[SentenceList[TSentenceType]]:
         with inject_logs(tool="english_to_sentences"):
@@ -34,7 +42,8 @@ class EnglishToSentencesTool(Tool[AgentResponse[SentenceList[TSentenceType]]]):
                     sentence_union = functools.reduce(operator.or_, self.SentenceType)
 
                 TargetSentenceList = create_model(
-                    "TargetSentenceList", sentences=(list[sentence_union], ...), __base__=BaseModel
+                    "TargetSentenceList", 
+                    sentences=(list[sentence_union], ...), __base__=BaseModel
                 )
             else:
                 # Single sentence type (backward compatible)
@@ -44,34 +53,58 @@ class EnglishToSentencesTool(Tool[AgentResponse[SentenceList[TSentenceType]]]):
                     __base__=SentenceList[self.SentenceType],
                 )
 
+            # Fall back to per-type examples when none were provided.
+            example_pairs = self.examples
+            if not example_pairs:
+                SentenceTypes = (
+                    self.SentenceType
+                    if isinstance(self.SentenceType, tuple)
+                    else (self.SentenceType,)
+                )
+                example_pairs = [
+                    (example_english, [example_sentence])
+                    for SentenceType in SentenceTypes
+                    for example_english, example_sentence in SentenceType.get_examples()
+                ]
+
+            # Serialize sentences individually: a SentenceList generic would pin
+            # every element to one type, but an example may mix types.
             examples = []
-            SentenceTypes = (
-                self.SentenceType if isinstance(self.SentenceType, tuple) else (self.SentenceType,)
+            for example_english, example_sentences in example_pairs:
+                examples.extend(
+                    [
+                        {"role": "user", "content": example_english},
+                        {
+                            "role": "assistant",
+                            "content": json.dumps(
+                                {
+                                    "sentences": [
+                                        json.loads(s.model_dump_json()) for s in example_sentences
+                                    ]
+                                }
+                            ),
+                        },
+                    ]
+                )
+
+            system = (
+                "You are a translator that transforms natural English sentences into structured sentences. "
+                "Given the output format, you may not be able to represent all the details of the input sentence, "
+                "but you must capture as much as meaning as possible. "
             )
-            for SentenceType in SentenceTypes:
-                for example_english, example_sentence in SentenceType.get_examples():
-                    examples.extend(
-                        [
-                            {"role": "user", "content": example_english},
-                            {
-                                "role": "assistant",
-                                "content": SentenceList[TSentenceType](
-                                    sentences=[example_sentence]
-                                ).model_dump_json(),
-                            },
-                        ]
-                    )
+            # Only license splitting when an example demonstrates it.
+            if any(len(sentences) > 1 for _, sentences in example_pairs):
+                system += (
+                    "One English sentence often needs SEVERAL structured sentences: return one for each "
+                    "proposition the input asserts, and use as many as the meaning requires. Coordinated, "
+                    "participial, and relative clauses each become their own sentence. Refer back to an "
+                    "entity already named with a pronoun rather than dropping the clause that mentions it. "
+                    "Do not discard a proposition you can express."
+                )
 
             response = self.agent.get_response(
                 messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a translator that transforms natural English sentences into structured sentences. "
-                            "Given the output format, you may not be able to represent all the details of the input sentence, "
-                            "but you must capture as much as meaning as possible. "
-                        ),
-                    },
+                    {"role": "system", "content": system},
                     *examples,
                     {"role": "user", "content": english},
                 ],
